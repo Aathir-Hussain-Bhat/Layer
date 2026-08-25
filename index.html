@@ -91,6 +91,7 @@
             display: flex;
             flex-direction: column;
             overflow-y: auto;
+            height: 100vh;
             z-index: 10;
             transition: transform 300ms ease;
         }
@@ -99,6 +100,7 @@
             overflow-y: auto;
             background: var(--bg-base);
             position: relative;
+            height: 100vh;
         }
 
         .context-panel {
@@ -107,6 +109,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            height: 100vh;
             z-index: 10;
             transition: transform 300ms ease;
         }
@@ -134,9 +137,8 @@
         }
         .sb-item svg { width: 16px; height: 16px; flex-shrink: 0; }
         
-        .sb-list { flex: 1; padding-bottom: 12px; }
+        .sb-list { flex: 1; padding-bottom: 12px; overflow-y: auto; }
         .sb-footer { border-top: 1px solid var(--border-subtle); padding: 12px; display: flex; gap: 8px; }
-        .sb-footer .sb-item { flex: 1; justify-content: center; }
 
         /* Topbar / Mobile */
         .mobile-topbar { display: none; padding: 12px 16px; border-bottom: 1px solid var(--border-subtle); align-items: center; justify-content: space-between; background: var(--bg-elevated); position: sticky; top: 0; z-index: 5; }
@@ -148,7 +150,7 @@
         .bottom-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-elevated); border-top: 1px solid var(--border-subtle); padding: 8px 0 16px; justify-content: space-around; z-index: 20; }
 
         /* Views */
-        .view { padding: 32px 48px; max-width: 900px; margin: 0 auto; animation: fadeIn 200ms ease; }
+        .view { padding: 32px 48px; max-width: 900px; margin: 0 auto; padding-bottom: 100px; animation: fadeIn 200ms ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         
         .view-header { margin-bottom: 32px; }
@@ -193,7 +195,7 @@
 
         /* Modals */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; animation: fadeIn 100ms ease; }
-        .modal { background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 24px; width: 100%; max-width: 500px; box-shadow: var(--shadow-lg); animation: slideUp 200ms ease; }
+        .modal { background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 24px; width: 100%; max-width: 500px; box-shadow: var(--shadow-lg); animation: slideUp 200ms ease; max-height: 90vh; overflow-y: auto; }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
@@ -276,7 +278,7 @@
         .empty-state-desc { color: var(--text-secondary); max-width: 400px; margin: 0 auto 16px; }
 
         /* Item Editor */
-        .item-editor { max-width: 720px; margin: 0 auto; padding: 32px; }
+        .item-editor { max-width: 720px; margin: 0 auto; padding: 32px; padding-bottom: 100px; }
         .item-header { margin-bottom: 24px; }
         .item-title-input { width: 100%; background: transparent; border: none; font-size: 28px; font-weight: 700; color: var(--text-primary); padding: 0; letter-spacing: -0.5px; }
         .item-title-input:focus { outline: none; }
@@ -336,8 +338,8 @@
             .ctx-close-btn { display: flex; }
             .mobile-topbar { display: flex; }
             .bottom-nav { display: flex; }
-            .view { padding: 24px 16px 80px; }
-            .item-editor { padding: 16px; }
+            .view { padding: 24px 16px 120px; }
+            .item-editor { padding: 16px 16px 100px; }
         }
         
         @media (prefers-reduced-motion: reduce) {
@@ -391,18 +393,15 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
                 AI Assistant
             </button>
+            <button class="sb-item" data-nav="settings">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                Settings
+            </button>
         </div>
         
         <div class="sb-section sb-list">
             <div class="sb-section-title">Your Layers</div>
             <div id="sb-layers"></div>
-        </div>
-
-        <div class="sb-footer">
-            <button class="sb-item" data-nav="settings" style="flex:1; justify-content:flex-start;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                Settings
-            </button>
         </div>
     </aside>
 
@@ -1200,6 +1199,9 @@ Then write your normal response. Do not modify user data without confirmation. B
             const title = document.querySelector('.mobile-topbar h2');
             const titles = { home: 'Home', layers: 'Layers', layer: 'Layer', items: 'All Items', item: 'Item', search: 'Search', ai: 'AI Assistant', settings: 'Settings' };
             title.textContent = titles[view] || 'Layer';
+            
+            // Ensure main content scrolls to top on view change
+            document.getElementById('main-content').scrollTop = 0;
         },
 
         Views: {
@@ -1256,20 +1258,14 @@ Then write your normal response. Do not modify user data without confirmation. B
                     if(tasks.length > 0) {
                         html += `<div><h3 class="text-sm text-muted mb-2" style="text-transform: uppercase; letter-spacing: 1px;">Pending Tasks</h3>`;
                         tasks.slice(0,4).forEach(t => {
-                            html += `<div class="card mb-4" onclick="App.Router.navigate('item', '${t.id}')">
-                                <div class="card-title">${this.icons().task} ${t.title}</div>
-                                <div class="card-meta"><span class="badge ${t.metadata.priority || 'medium'}">${t.metadata.priority || 'Medium'}</span><span>${t.metadata.status || 'todo'}</span></div>
-                            </div>`;
+                            html += this.renderItemCard(t);
                         });
                         html += `</div>`;
                     }
                     if(ideas.length > 0) {
                         html += `<div><h3 class="text-sm text-muted mb-2" style="text-transform: uppercase; letter-spacing: 1px;">Recent Ideas</h3>`;
                         ideas.forEach(i => {
-                            html += `<div class="card mb-4" onclick="App.Router.navigate('item', '${i.id}')">
-                                <div class="card-title">${this.icons().idea} ${i.title}</div>
-                                <div class="card-desc">${i.content || 'No details'}</div>
-                            </div>`;
+                            html += this.renderItemCard(i);
                         });
                         html += `</div>`;
                     }
@@ -1385,7 +1381,7 @@ Then write your normal response. Do not modify user data without confirmation. B
                     <div class="flex justify-between items-center mb-4">
                         <div class="flex gap-2 items-center">
                             <span class="badge">${it.type}</span>
-                            ${it.type === 'task' ? `<select class="input" style="width: auto; padding: 4px;" onchange="App.UI.updateItemField('metadata.status', this.value)">
+                            ${it.type === 'task' ? `<select class="input" style="width: auto; padding: 4px;" onchange="App.UI.updateTaskStatus('${it.id}', this.value)">
                                 <option value="todo" ${it.metadata.status==='todo'?'selected':''}>To Do</option>
                                 <option value="progress" ${it.metadata.status==='progress'?'selected':''}>In Progress</option>
                                 <option value="done" ${it.metadata.status==='done'?'selected':''}>Done</option>
@@ -1601,13 +1597,20 @@ Then write your normal response. Do not modify user data without confirmation. B
             },
 
             renderItemCard(it) {
-                let meta = '';
-                if(it.type === 'task') meta = `<span class="badge ${it.metadata.priority || 'medium'}">${it.metadata.priority || 'Medium'}</span>`;
-                else if(it.type === 'idea') meta = `<span class="badge">Idea</span>`;
+                let metaHtml = '';
+                if(it.type === 'task') {
+                    metaHtml = `<select class="input" style="width: auto; padding: 2px 4px; font-size: 11px; margin: 0; height: auto; background: var(--bg-surface); border: 1px solid var(--border-subtle);" onchange="App.UI.updateTaskStatus('${it.id}', this.value); event.stopPropagation();">
+                        <option value="todo" ${it.metadata.status==='todo'?'selected':''}>To Do</option>
+                        <option value="progress" ${it.metadata.status==='progress'?'selected':''}>In Progress</option>
+                        <option value="done" ${it.metadata.status==='done'?'selected':''}>Done</option>
+                    </select>`;
+                } else if(it.type === 'idea') {
+                    metaHtml = `<span class="badge">Idea</span>`;
+                }
                 return `<div class="card" onclick="App.Router.navigate('item', '${it.id}')" oncontextmenu="App.UI.showCtxMenu(event, 'item', '${it.id}')">
                     <div class="card-title">${this.icons()[it.type]} ${it.title}</div>
                     <div class="card-desc">${it.content || 'No content'}</div>
-                    <div class="card-meta"><div>${meta}</div><span>${App.utils.formatTime(it.updatedAt)}</span></div>
+                    <div class="card-meta"><div>${metaHtml}</div><span>${App.utils.formatTime(it.updatedAt)}</span></div>
                 </div>`;
             }
         },
@@ -2077,17 +2080,19 @@ Then write your normal response. Do not modify user data without confirmation. B
         },
         async confirmAction(msgId) {
             const msg = await App.DB.get('aiMessages', msgId);
-            if(msg.action && msg.action.layerId) {
+            if(msg.action) {
+                const taskCount = msg.action.tasks.length;
                 for(const t of msg.action.tasks) {
-                    await App.Items.create('task', { title: t.title, layerId: msg.action.layerId, metadata: { status: 'todo', priority: 'medium' } });
+                    await App.Items.create('task', { title: t.title, layerId: msg.action.layerId || null, metadata: { status: 'todo', priority: 'medium' } });
                 }
-            } else if(msg.action) {
-                for(const t of msg.action.tasks) {
-                    await App.Items.create('task', { title: t.title, metadata: { status: 'todo', priority: 'medium' } });
-                }
+                // Remove action from message to hide the button
+                msg.action = null; 
+                msg.content += "\n\n✅ *Tasks created successfully.*";
+                await App.DB.put('aiMessages', msg);
+                this.showSnackbar(`${taskCount} tasks created`);
+                await this.render();
+                await this.renderContextPanel(); // Ensure right panel updates if open
             }
-            this.showSnackbar(`${msg.action.tasks.length} tasks created`);
-            await this.render();
         },
         async clearConversation() {
             const msgs = await App.DB.getAll('aiMessages');
@@ -2279,6 +2284,17 @@ Then write your normal response. Do not modify user data without confirmation. B
             }
         },
 
+        // --- Task & Item Actions ---
+        async updateTaskStatus(id, status) {
+            const item = await App.Items.get(id);
+            if(item) {
+                item.metadata.status = status;
+                await App.Items.update(id, { metadata: item.metadata });
+                this.showSnackbar('Task status updated');
+                await this.render();
+            }
+        },
+
         // --- Item Editor ---
         updateItemField(field, value) {
             if (!App.UI._debouncedUpdate) {
@@ -2328,4 +2344,4 @@ Then write your normal response. Do not modify user data without confirmation. B
 App.init();
 </script>
 </body>
-  </html>
+    </html>
