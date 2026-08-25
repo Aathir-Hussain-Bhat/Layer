@@ -1,0 +1,2331 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Layer - Your digital world, organized by context instead of folders.">
+    <title>Layer — Your context, organized.</title>
+    
+    <!-- Dynamic PWA Manifest & Theme will be injected here by JS -->
+    <meta name="theme-color" content="#0a0a0b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <style>
+        :root {
+            --bg-base: #0a0a0b;
+            --bg-elevated: #141416;
+            --bg-surface: #1c1c1f;
+            --bg-hover: #252528;
+            --border-subtle: rgba(255,255,255,0.08);
+            --border-strong: rgba(255,255,255,0.15);
+            --text-primary: #f5f5f7;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --accent-blue: #3b82f6;
+            --accent-blue-hover: #2563eb;
+            --accent-glow: rgba(59, 130, 246, 0.15);
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
+            --shadow-lg: 0 10px 30px rgba(0,0,0,0.4);
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            --transition: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+            --sidebar-w: 260px;
+            --context-w: 340px;
+        }
+
+        [data-theme="light"] {
+            --bg-base: #f8f9fa;
+            --bg-elevated: #ffffff;
+            --bg-surface: #f1f3f5;
+            --bg-hover: #e9ecef;
+            --border-subtle: rgba(0,0,0,0.08);
+            --border-strong: rgba(0,0,0,0.15);
+            --text-primary: #111113;
+            --text-secondary: #495057;
+            --text-muted: #868e96;
+            --accent-blue: #2563eb;
+            --accent-blue-hover: #1c45c7;
+            --accent-glow: rgba(37, 99, 235, 0.1);
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --shadow-lg: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        
+        html, body {
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            font-size: 15px;
+            line-height: 1.5;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            display: grid;
+            grid-template-columns: var(--sidebar-w) 1fr var(--context-w);
+            grid-template-rows: 1fr;
+            height: 100vh;
+            background-image: radial-gradient(circle at 100% 0%, rgba(59, 130, 246, 0.03), transparent 40%);
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+
+        button, input, textarea, select { font-family: inherit; font-size: inherit; color: inherit; }
+        button { cursor: pointer; border: none; background: none; }
+        a { color: var(--accent-blue); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* Layout */
+        .sidebar {
+            border-right: 1px solid var(--border-subtle);
+            background: var(--bg-elevated);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            z-index: 10;
+            transition: transform 300ms ease;
+        }
+        
+        .main-content {
+            overflow-y: auto;
+            background: var(--bg-base);
+            position: relative;
+        }
+
+        .context-panel {
+            border-left: 1px solid var(--border-subtle);
+            background: var(--bg-elevated);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 10;
+            transition: transform 300ms ease;
+        }
+
+        /* Sidebar */
+        .sb-header { padding: 24px 20px 12px; display: flex; align-items: center; gap: 10px; }
+        .sb-logo { font-weight: 700; font-size: 18px; letter-spacing: -0.5px; }
+        .sb-logo span { color: var(--accent-blue); }
+        
+        .sb-section { padding: 8px 12px; }
+        .sb-section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); padding: 8px 8px 4px; font-weight: 600; }
+        
+        .sb-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 10px; border-radius: var(--radius-sm);
+            color: var(--text-secondary); width: 100%; text-align: left;
+            transition: background var(--transition), color var(--transition);
+            font-size: 14px; position: relative;
+        }
+        .sb-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .sb-item.active { background: var(--bg-hover); color: var(--text-primary); }
+        .sb-item.active::before {
+            content: ''; position: absolute; left: -12px; top: 50%; transform: translateY(-50%);
+            height: 16px; width: 3px; background: var(--accent-blue); border-radius: 0 2px 2px 0;
+        }
+        .sb-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+        
+        .sb-list { flex: 1; padding-bottom: 12px; }
+        .sb-footer { border-top: 1px solid var(--border-subtle); padding: 12px; display: flex; gap: 8px; }
+        .sb-footer .sb-item { flex: 1; justify-content: center; }
+
+        /* Topbar / Mobile */
+        .mobile-topbar { display: none; padding: 12px 16px; border-bottom: 1px solid var(--border-subtle); align-items: center; justify-content: space-between; background: var(--bg-elevated); position: sticky; top: 0; z-index: 5; }
+        .mobile-topbar h2 { font-size: 16px; font-weight: 600; }
+        .icon-btn { padding: 6px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); }
+        .icon-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .icon-btn svg { width: 20px; height: 20px; }
+
+        .bottom-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-elevated); border-top: 1px solid var(--border-subtle); padding: 8px 0 16px; justify-content: space-around; z-index: 20; }
+
+        /* Views */
+        .view { padding: 32px 48px; max-width: 900px; margin: 0 auto; animation: fadeIn 200ms ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .view-header { margin-bottom: 32px; }
+        .view-title { font-size: 32px; font-weight: 700; letter-spacing: -1px; margin-bottom: 8px; }
+        .view-subtitle { color: var(--text-secondary); font-size: 16px; }
+
+        /* Cards & Grid */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+        
+        .card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            cursor: pointer;
+            transition: border-color var(--transition), transform var(--transition), background var(--transition);
+            display: flex; flex-direction: column; gap: 8px;
+            position: relative; overflow: hidden;
+        }
+        .card:hover { border-color: var(--border-strong); background: var(--bg-surface); }
+        .card-title { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+        .card-desc { font-size: 13px; color: var(--text-secondary); flex: 1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .card-meta { font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+        
+        .layer-icon { width: 28px; height: 28px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; flex-shrink: 0; }
+        
+        .badge { font-size: 11px; padding: 2px 6px; border-radius: 4px; background: var(--bg-surface); border: 1px solid var(--border-subtle); color: var(--text-secondary); font-weight: 500; }
+        .badge.high { color: #f87171; border-color: rgba(248,113,113,0.2); background: rgba(248,113,113,0.1); }
+        .badge.medium { color: #fbbf24; border-color: rgba(251,191,36,0.2); background: rgba(251,191,36,0.1); }
+        .badge.low { color: #34d399; border-color: rgba(52,211,153,0.2); background: rgba(52,211,153,0.1); }
+
+        /* Buttons */
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; transition: all var(--transition); border: 1px solid transparent; }
+        .btn-primary { background: var(--accent-blue); color: white; }
+        .btn-primary:hover { background: var(--accent-blue-hover); }
+        .btn-secondary { background: var(--bg-surface); color: var(--text-primary); border-color: var(--border-subtle); }
+        .btn-secondary:hover { background: var(--bg-hover); border-color: var(--border-strong); }
+        .btn-ghost { color: var(--text-secondary); }
+        .btn-ghost:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .btn-danger { background: rgba(248,113,113,0.1); color: #f87171; border-color: rgba(248,113,113,0.2); }
+        .btn-danger:hover { background: rgba(248,113,113,0.2); }
+
+        /* Modals */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; animation: fadeIn 100ms ease; }
+        .modal { background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 24px; width: 100%; max-width: 500px; box-shadow: var(--shadow-lg); animation: slideUp 200ms ease; }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .modal-title { font-size: 18px; font-weight: 600; }
+        
+        .input { width: 100%; background: var(--bg-base); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 14px; color: var(--text-primary); transition: border-color var(--transition); }
+        .input:focus { outline: none; border-color: var(--accent-blue); }
+        textarea.input { resize: vertical; min-height: 80px; line-height: 1.5; }
+        
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        /* Quick Capture */
+        .qc-overlay { background: rgba(0,0,0,0.4); }
+        .qc-modal { max-width: 560px; padding: 0; overflow: hidden; }
+        .qc-input { width: 100%; border: none; background: transparent; padding: 24px; font-size: 22px; color: var(--text-primary); font-weight: 500; }
+        .qc-input:focus { outline: none; }
+        .qc-input::placeholder { color: var(--text-muted); }
+        .qc-footer { padding: 12px 16px; border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; background: var(--bg-surface); }
+        .qc-types { display: flex; gap: 4px; }
+        .qc-type-btn { padding: 4px 10px; border-radius: var(--radius-sm); font-size: 12px; color: var(--text-secondary); border: 1px solid transparent; }
+        .qc-type-btn.active { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-subtle); }
+
+        /* Command Palette */
+        .cp-overlay { background: rgba(0,0,0,0.4); align-items: flex-start; padding-top: 15vh; }
+        .cp-modal { max-width: 600px; border-radius: var(--radius-md); overflow: hidden; }
+        .cp-search { padding: 16px 20px; border-bottom: 1px solid var(--border-subtle); font-size: 16px; background: var(--bg-elevated); }
+        .cp-results { max-height: 400px; overflow-y: auto; padding: 8px; }
+        .cp-item { padding: 10px 12px; border-radius: var(--radius-sm); display: flex; align-items: center; gap: 12px; cursor: pointer; }
+        .cp-item:hover, .cp-item.selected { background: var(--bg-hover); }
+        .cp-item svg { width: 16px; height: 16px; color: var(--text-secondary); }
+        .cp-item-type { margin-left: auto; font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
+
+        /* Context Panel / AI */
+        .ctx-header { padding: 16px; border-bottom: 1px solid var(--border-subtle); }
+        .ctx-header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .ctx-tabs { display: flex; gap: 4px; }
+        .ctx-tab { padding: 6px 10px; border-radius: var(--radius-sm); font-size: 12px; color: var(--text-secondary); font-weight: 500; }
+        .ctx-tab.active { background: var(--bg-hover); color: var(--text-primary); }
+        
+        .ctx-close-btn { display: none; padding: 4px; }
+        
+        .ctx-content { flex: 1; overflow-y: auto; padding: 16px; }
+        
+        .ai-msg { margin-bottom: 16px; }
+        .ai-msg-role { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; font-weight: 600; }
+        .ai-msg-content { font-size: 14px; line-height: 1.6; color: var(--text-primary); }
+        .ai-msg-assistant .ai-msg-content { background: var(--bg-surface); padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); }
+        
+        .ai-thinking { display: flex; gap: 4px; align-items: center; padding: 4px 0; }
+        .ai-thinking span { width: 6px; height: 6px; background: var(--text-muted); border-radius: 50%; animation: blink 1.4s infinite both; }
+        .ai-thinking span:nth-child(2) { animation-delay: .2s; }
+        .ai-thinking span:nth-child(3) { animation-delay: .4s; }
+        @keyframes blink { 0%, 80%, 100% { opacity: 0.2; } 40% { opacity: 1; } }
+
+        .ai-action-card { background: var(--bg-base); border: 1px solid var(--border-strong); border-radius: var(--radius-md); padding: 12px; margin-top: 8px; }
+        .ai-action-title { font-size: 12px; font-weight: 600; color: var(--accent-blue); margin-bottom: 8px; text-transform: uppercase; }
+        .ai-action-item { font-size: 13px; padding: 4px 0; border-bottom: 1px solid var(--border-subtle); }
+        .ai-action-item:last-child { border-bottom: none; }
+
+        .ai-suggestions { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+        .ai-suggestion { text-align: left; padding: 8px 12px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 13px; color: var(--text-primary); }
+        .ai-suggestion:hover { background: var(--bg-hover); border-color: var(--border-strong); }
+
+        /* Context Menu */
+        .ctx-menu { position: fixed; background: var(--bg-elevated); border: 1px solid var(--border-strong); border-radius: var(--radius-md); padding: 6px; z-index: 200; box-shadow: var(--shadow-lg); min-width: 180px; animation: fadeIn 100ms ease; }
+        .ctx-menu-item { padding: 8px 12px; border-radius: var(--radius-sm); font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--text-primary); }
+        .ctx-menu-item:hover { background: var(--bg-hover); }
+        .ctx-menu-item.danger { color: #f87171; }
+        .ctx-menu-sep { height: 1px; background: var(--border-subtle); margin: 4px 0; }
+
+        /* Snackbar */
+        .snackbar { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--bg-elevated); border: 1px solid var(--border-strong); padding: 12px 16px; border-radius: var(--radius-md); box-shadow: var(--shadow-lg); z-index: 150; display: flex; align-items: center; gap: 12px; animation: slideUp 200ms ease; }
+        .snackbar-text { font-size: 14px; }
+
+        /* Empty States */
+        .empty-state { text-align: center; padding: 48px 24px; }
+        .empty-state-icon { width: 48px; height: 48px; margin: 0 auto 16px; opacity: 0.5; }
+        .empty-state-title { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+        .empty-state-desc { color: var(--text-secondary); max-width: 400px; margin: 0 auto 16px; }
+
+        /* Item Editor */
+        .item-editor { max-width: 720px; margin: 0 auto; padding: 32px; }
+        .item-header { margin-bottom: 24px; }
+        .item-title-input { width: 100%; background: transparent; border: none; font-size: 28px; font-weight: 700; color: var(--text-primary); padding: 0; letter-spacing: -0.5px; }
+        .item-title-input:focus { outline: none; }
+        .item-body-input { width: 100%; background: transparent; border: none; font-size: 16px; color: var(--text-primary); line-height: 1.7; min-height: 400px; resize: none; padding: 0; }
+        .item-body-input:focus { outline: none; }
+        
+        .meta-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-subtle); }
+        .tag { display: inline-flex; align-items: center; gap: 4px; background: var(--bg-surface); padding: 4px 8px; border-radius: var(--radius-sm); font-size: 12px; color: var(--text-secondary); }
+        
+        /* Layer Header */
+        .layer-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 32px; }
+        .layer-header-info { flex: 1; }
+        .layer-header h1 { font-size: 28px; font-weight: 700; display: flex; align-items: center; gap: 12px; }
+        .layer-header p { color: var(--text-secondary); margin-top: 4px; }
+        
+        /* Login View */
+        .login-overlay { background: var(--bg-base); background-image: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.1), transparent 60%); position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 16px; }
+        .login-card { max-width: 400px; width: 100%; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 32px; box-shadow: var(--shadow-lg); text-align: center; }
+        .login-logo { font-weight: 700; font-size: 24px; letter-spacing: -0.5px; margin-bottom: 24px; }
+        .login-logo span { color: var(--accent-blue); }
+
+        /* PWA Install Banner */
+        .pwa-banner { position: fixed; bottom: 20px; left: 20px; right: 20px; max-width: 360px; background: var(--bg-elevated); border: 1px solid var(--border-strong); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 16px; z-index: 150; display: flex; gap: 12px; align-items: center; animation: slideUp 300ms ease; }
+        .pwa-banner-icon { width: 40px; height: 40px; background: var(--bg-surface); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .pwa-banner-text { flex: 1; }
+        .pwa-banner-title { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+        .pwa-banner-desc { font-size: 12px; color: var(--text-muted); }
+        .pwa-banner-actions { display: flex; flex-direction: column; gap: 4px; }
+
+        /* Offline Indicator */
+        .offline-indicator { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); background: rgba(248, 113, 113, 0.9); color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; z-index: 200; display: none; box-shadow: var(--shadow-md); }
+
+        /* Model Search */
+        .model-search-container { position: relative; margin-bottom: 8px; }
+        .model-search-results { max-height: 200px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); background: var(--bg-surface); }
+        .model-item { padding: 8px 12px; border-bottom: 1px solid var(--border-subtle); cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .model-item:hover { background: var(--bg-hover); }
+        .model-item-name { font-size: 13px; font-weight: 500; }
+        .model-item-id { font-size: 11px; color: var(--text-muted); }
+        .model-item.selected { background: var(--accent-glow); }
+
+        /* Creator Wall */
+        .creator-card { text-align: center; }
+        .creator-img { width: 100px; height: 100px; border-radius: 50%; margin: 0 auto 16px; display: block; object-fit: cover; border: 2px solid var(--border-strong); box-shadow: var(--shadow-md); }
+        .social-links { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 20px; }
+        .social-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--bg-surface); color: var(--text-primary); transition: all 150ms ease; border: 1px solid var(--border-subtle); }
+        .social-btn:hover { background: var(--accent-blue); color: white; transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .social-btn svg { width: 18px; height: 18px; }
+
+        /* Mobile Media Queries */
+        @media (max-width: 1024px) {
+            body { grid-template-columns: 1fr; }
+            .sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 80%; max-width: 300px; transform: translateX(-100%); box-shadow: var(--shadow-lg); }
+            .sidebar.open { transform: translateX(0); }
+            .context-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 90%; max-width: 360px; transform: translateX(100%); box-shadow: var(--shadow-lg); }
+            .context-panel.open { transform: translateX(0); }
+            .ctx-close-btn { display: flex; }
+            .mobile-topbar { display: flex; }
+            .bottom-nav { display: flex; }
+            .view { padding: 24px 16px 80px; }
+            .item-editor { padding: 16px; }
+        }
+        
+        @media (prefers-reduced-motion: reduce) {
+            * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+        }
+
+        /* Utilities */
+        .hidden { display: none !important; }
+        .text-muted { color: var(--text-muted); }
+        .mt-2 { margin-top: 8px; } .mt-4 { margin-top: 16px; } .mt-6 { margin-top: 24px; }
+        .flex { display: flex; } .flex-col { flex-direction: column; }
+        .gap-2 { gap: 8px; } .gap-4 { gap: 16px; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .w-full { width: 100%; }
+        .text-sm { font-size: 13px; } .text-xs { font-size: 12px; }
+        .flex-1 { flex: 1; }
+        .mb-4 { margin-bottom: 16px; }
+        .opacity-75 { opacity: 0.75; }
+
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sb-header">
+            <div class="sb-logo">Layer<span>.</span></div>
+            <button class="icon-btn ctx-close-btn" style="margin-left: auto;" onclick="document.getElementById('sidebar').classList.remove('open')">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="sb-section">
+            <button class="sb-item active" data-nav="home">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                Home
+            </button>
+            <button class="sb-item" data-nav="layers">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                Layers
+            </button>
+            <button class="sb-item" data-nav="items">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                All Items
+            </button>
+            <button class="sb-item" data-nav="search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Search
+            </button>
+            <button class="sb-item" data-nav="ai">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
+                AI Assistant
+            </button>
+        </div>
+        
+        <div class="sb-section sb-list">
+            <div class="sb-section-title">Your Layers</div>
+            <div id="sb-layers"></div>
+        </div>
+
+        <div class="sb-footer">
+            <button class="sb-item" data-nav="settings" style="flex:1; justify-content:flex-start;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                Settings
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content" id="main-content">
+        <div class="mobile-topbar">
+            <button class="icon-btn" id="mobile-menu-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+            <h2 id="mobile-title">Layer</h2>
+            <button class="icon-btn" id="mobile-ctx-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </button>
+        </div>
+        <div id="view-container"></div>
+    </main>
+
+    <!-- Context Panel -->
+    <aside class="context-panel" id="context-panel">
+        <div class="ctx-header">
+            <div class="ctx-header-top">
+                <div class="ctx-tabs">
+                    <button class="ctx-tab active" data-ctx-tab="ai">AI Assistant</button>
+                    <button class="ctx-tab" data-ctx-tab="info">Context</button>
+                </div>
+                <button class="icon-btn ctx-close-btn" onclick="document.getElementById('context-panel').classList.remove('open')">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div id="ctx-info" class="text-sm text-muted"></div>
+        </div>
+        <div class="ctx-content" id="ctx-content"></div>
+        <div class="ctx-footer" id="ctx-footer" style="border-top: 1px solid var(--border-subtle); padding: 12px; background: var(--bg-base);"></div>
+    </aside>
+
+    <!-- Bottom Nav (Mobile) -->
+    <nav class="bottom-nav">
+        <button class="icon-btn" data-nav="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></button>
+        <button class="icon-btn" data-nav="layers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/></svg></button>
+        <button class="icon-btn" id="quick-capture-btn" style="background: var(--accent-blue); color: white; border-radius: 50%; width: 40px; height: 40px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        <button class="icon-btn" data-nav="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+        <button class="icon-btn" data-nav="ai"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/></svg></button>
+    </nav>
+
+    <div id="modal-root"></div>
+    <div id="ctx-menu-root"></div>
+    <div id="snackbar-root"></div>
+    <div id="pwa-banner-root"></div>
+    <div id="offline-indicator">You're offline. Cached data is being displayed.</div>
+
+<script>
+/* ============================================================================
+ * LAYER - Context Workspace (Single-File PWA)
+ * Architecture: Vanilla JS, IndexedDB, OpenRouter AI, Dynamic PWA Manifest
+ * ============================================================================
+ */
+
+const App = {
+    config: {
+        DB_NAME: 'layer_db',
+        DB_VERSION: 1,
+        DEFAULT_TEMP: 0.7,
+        DEFAULT_MAX_TOKENS: 1000,
+        OPENROUTER_URL: 'https://openrouter.ai/api/v1'
+    },
+    state: {
+        db: null,
+        currentView: 'home',
+        currentLayerId: null,
+        currentItemId: null,
+        currentConversationId: null,
+        generalConversationId: null,
+        contextTab: 'ai',
+        searchQuery: '',
+        settings: {},
+        abortController: null,
+        cache: {},
+        user: null,
+        deferredPrompt: null
+    },
+    
+    // ============================================================
+    // INITIALIZATION
+    // ============================================================
+    async init() {
+        this.PWA.init(); // Setup PWA features early
+        this.Auth.init();
+        if (!this.state.user) {
+            this.UI.showLogin();
+            return; // Halt app load until login
+        }
+
+        await this.DB.init();
+        await this.loadSettings();
+        this.Router.init();
+        this.Events.bindGlobal();
+        await this.UI.render();
+        this.checkOnboarding();
+    },
+
+    checkOnboarding() {
+        if (!this.state.settings.onboarded) {
+            this.UI.showOnboarding();
+        }
+    },
+
+    // ============================================================
+    // PWA & OFFLINE SUPPORT
+    // ============================================================
+    PWA: {
+        init() {
+            this.setupManifest();
+            this.setupInstallPrompt();
+            this.setupOfflineIndicator();
+            this.setupServiceWorker();
+        },
+        setupManifest() {
+            const iconUrl = "https://res.cloudinary.com/prjgzqvy/image/upload/v1787650171/grok_1787647904984_nzcznv.jpg";
+            const manifest = {
+                name: "Layer - Context Workspace",
+                short_name: "Layer",
+                start_url: ".",
+                display: "standalone",
+                background_color: "#0a0a0b",
+                theme_color: "#0a0a0b",
+                icons: [
+                    {
+                        src: iconUrl,
+                        sizes: "512x512",
+                        type: "image/jpeg",
+                        purpose: "any maskable"
+                    }
+                ]
+            };
+            const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+            const manifestURL = URL.createObjectURL(blob);
+            
+            const link = document.createElement('link');
+            link.rel = 'manifest';
+            link.href = manifestURL;
+            document.head.appendChild(link);
+
+            const appleLink = document.createElement('link');
+            appleLink.rel = 'apple-touch-icon';
+            appleLink.href = iconUrl;
+            document.head.appendChild(appleLink);
+        },
+        setupInstallPrompt() {
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                App.state.deferredPrompt = e;
+                if (!localStorage.getItem('layer_pwa_dismissed') && !localStorage.getItem('layer_pwa_installed')) {
+                    App.UI.showInstallBanner();
+                }
+            });
+            window.addEventListener('appinstalled', () => {
+                localStorage.setItem('layer_pwa_installed', 'true');
+                App.UI.hideInstallBanner();
+                App.state.deferredPrompt = null;
+                App.UI.showSnackbar('Layer installed successfully!');
+            });
+        },
+        async doInstall() {
+            if (App.state.deferredPrompt) {
+                App.state.deferredPrompt.prompt();
+                const { outcome } = await App.state.deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    localStorage.setItem('layer_pwa_installed', 'true');
+                    App.UI.hideInstallBanner();
+                } else {
+                    localStorage.setItem('layer_pwa_dismissed', 'true');
+                    App.UI.hideInstallBanner();
+                }
+                App.state.deferredPrompt = null;
+            }
+        },
+        dismissInstall() {
+            localStorage.setItem('layer_pwa_dismissed', 'true');
+            App.UI.hideInstallBanner();
+        },
+        setupOfflineIndicator() {
+            const indicator = document.getElementById('offline-indicator');
+            const updateStatus = () => {
+                indicator.style.display = navigator.onLine ? 'none' : 'block';
+            };
+            window.addEventListener('online', updateStatus);
+            window.addEventListener('offline', updateStatus);
+            updateStatus();
+        },
+        setupServiceWorker() {
+            if ('serviceWorker' in navigator && window.isSecureContext) {
+                try {
+                    const swCode = `
+                        const CACHE_NAME = 'layer-shell-v1';
+                        self.addEventListener('install', e => self.skipWaiting());
+                        self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+                        self.addEventListener('fetch', e => {
+                            if (e.request.method !== 'GET') return;
+                            e.respondWith(
+                                caches.match(e.request).then(cached => {
+                                    const networkFetch = fetch(e.request).then(response => {
+                                        if (response && response.status === 200) {
+                                            const responseClone = response.clone();
+                                            caches.open(CACHE_NAME).then(cache => cache.put(e.request, responseClone));
+                                        }
+                                        return response;
+                                    }).catch(() => cached);
+                                    return cached || networkFetch;
+                                })
+                            );
+                        });
+                    `;
+                    const blob = new Blob([swCode], {type: 'text/javascript'});
+                    const swUrl = URL.createObjectURL(blob);
+                    navigator.serviceWorker.register(swUrl).catch(err => console.log("SW registration skipped (expected in single-file dev):", err));
+                } catch(e) { console.log("SW setup skipped:", e); }
+            }
+        }
+    },
+
+    // ============================================================
+    // AUTHENTICATION (LocalStorage)
+    // ============================================================
+    Auth: {
+        init() {
+            const user = localStorage.getItem('layer_user');
+            if (user) App.state.user = JSON.parse(user);
+        },
+        getUsers() { return JSON.parse(localStorage.getItem('layer_users') || '{}'); },
+        register(username, password) {
+            if (!username || !password) return { success: false, error: 'Username and password required' };
+            const users = this.getUsers();
+            if (users[username]) return { success: false, error: 'User already exists' };
+            users[username] = { password: btoa(password) };
+            localStorage.setItem('layer_users', JSON.stringify(users));
+            return this.login(username, password);
+        },
+        login(username, password) {
+            if (!username || !password) return { success: false, error: 'Username and password required' };
+            const users = this.getUsers();
+            if (!users[username] || users[username].password !== btoa(password)) return { success: false, error: 'Invalid credentials' };
+            const user = { username };
+            App.state.user = user;
+            localStorage.setItem('layer_user', JSON.stringify(user));
+            return { success: true };
+        },
+        logout() {
+            localStorage.removeItem('layer_user');
+            App.state.user = null;
+            location.reload();
+        }
+    },
+
+    // ============================================================
+    // UTILITIES
+    // ============================================================
+    utils: {
+        uuid() { return crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; const v = c == 'x' ? r : (r & 0x3 | 0x8); return v.toString(16); }); },
+        formatTime(ts) { return new Date(ts).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); },
+        formatDay(ts) { return new Date(ts).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }); },
+        escapeHtml(str) { if(!str) return ''; const div = document.createElement('div'); div.textContent = str; return div.innerHTML; },
+        debounce(fn, delay) { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); }; },
+        isValidUrl(str) { try { new URL(str); return true; } catch { return false; } }
+    },
+
+    // ============================================================
+    // DATABASE (IndexedDB)
+    // ============================================================
+    DB: {
+        db: null,
+        async init() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open(App.config.DB_NAME, App.config.DB_VERSION);
+                req.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains('layers')) db.createObjectStore('layers', { keyPath: 'id' });
+                    if (!db.objectStoreNames.contains('items')) db.createObjectStore('items', { keyPath: 'id' });
+                    if (!db.objectStoreNames.contains('itemLayers')) db.createObjectStore('itemLayers', { keyPath: 'id' });
+                    if (!db.objectStoreNames.contains('layerRelations')) db.createObjectStore('layerRelations', { keyPath: 'id' });
+                    if (!db.objectStoreNames.contains('files')) db.createObjectStore('files', { keyPath: 'id' });
+                    if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings', { keyPath: 'key' });
+                    if (!db.objectStoreNames.contains('aiConversations')) db.createObjectStore('aiConversations', { keyPath: 'id' });
+                    if (!db.objectStoreNames.contains('aiMessages')) db.createObjectStore('aiMessages', { keyPath: 'id' });
+                };
+                req.onsuccess = (e) => { this.db = e.target.result; App.state.db = this.db; resolve(); };
+                req.onerror = (e) => reject(e.target.error);
+            });
+        },
+        async tx(store, mode = 'readonly') { return this.db.transaction(store, mode).objectStore(store); },
+        async get(store, key) { const t = await this.tx(store); return new Promise(r => { const req = t.get(key); req.onsuccess = () => r(req.result); req.onerror = () => r(null); }); },
+        async getAll(store) { const t = await this.tx(store); return new Promise(r => { const req = t.getAll(); req.onsuccess = () => r(req.result || []); req.onerror = () => r([]); }); },
+        async put(store, val) { const t = await this.tx(store, 'readwrite'); return new Promise(r => { const req = t.put(val); req.onsuccess = () => r(val); req.onerror = () => r(null); }); },
+        async delete(store, key) { const t = await this.tx(store, 'readwrite'); return new Promise(r => { const req = t.delete(key); req.onsuccess = () => r(true); req.onerror = () => r(false); }); },
+        async clear(store) { const t = await this.tx(store, 'readwrite'); return new Promise(r => { const req = t.clear(); req.onsuccess = () => r(true); req.onerror = () => r(false); }); }
+    },
+
+    // ============================================================
+    // SETTINGS
+    // ============================================================
+    async loadSettings() {
+        const settingsList = await this.DB.getAll('settings');
+        this.state.settings = settingsList.reduce((acc, s) => { acc[s.key] = s.value; return acc; }, {});
+        if (!this.state.settings.theme) this.state.settings.theme = 'dark';
+        if (!this.state.settings.temp) this.state.settings.temp = this.config.DEFAULT_TEMP;
+        if (!this.state.settings.maxTokens) this.state.settings.maxTokens = this.config.DEFAULT_MAX_TOKENS;
+        document.documentElement.setAttribute('data-theme', this.state.settings.theme);
+    },
+    async saveSetting(key, value) {
+        this.state.settings[key] = value;
+        await this.DB.put('settings', { key, value });
+    },
+
+    // ============================================================
+    // LAYERS
+    // ============================================================
+    Layers: {
+        async create(data) {
+            const layer = {
+                id: App.utils.uuid(),
+                name: data.name || 'Untitled Layer',
+                description: data.description || '',
+                icon: data.icon || 'L',
+                accent: data.accent || '#3b82f6',
+                favorite: false,
+                archived: false,
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+            };
+            await App.DB.put('layers', layer);
+            return layer;
+        },
+        async update(id, updates) {
+            const layer = await App.DB.get('layers', id);
+            if (!layer) return null;
+            Object.assign(layer, updates, { updatedAt: Date.now() });
+            await App.DB.put('layers', layer);
+            return layer;
+        },
+        async delete(id) {
+            await App.DB.delete('layers', id);
+            const items = await App.Items.getByLayer(id);
+            for(const il of items) await App.DB.delete('itemLayers', il.id);
+            const rels = await App.DB.getAll('layerRelations');
+            for(const r of rels) { if(r.sourceLayerId === id || r.targetLayerId === id) await App.DB.delete('layerRelations', r.id); }
+        },
+        async get(id) { return App.DB.get('layers', id); },
+        async getAll() { 
+            const layers = await App.DB.getAll('layers');
+            return layers.filter(l => !l.archived).sort((a,b) => b.updatedAt - a.updatedAt);
+        }
+    },
+
+    // ============================================================
+    // ITEMS
+    // ============================================================
+    Items: {
+        async create(type, data) {
+            const item = {
+                id: App.utils.uuid(),
+                type,
+                title: data.title || 'Untitled',
+                content: data.content || '',
+                metadata: data.metadata || {},
+                tags: data.tags || [],
+                favorite: false,
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+            };
+            await App.DB.put('items', item);
+            if (data.layerId) await App.Relations.addItemToLayer(item.id, data.layerId);
+            return item;
+        },
+        async update(id, updates) {
+            const item = await App.DB.get('items', id);
+            if (!item) return null;
+            Object.assign(item, updates, { updatedAt: Date.now() });
+            await App.DB.put('items', item);
+            return item;
+        },
+        async delete(id) {
+            await App.DB.delete('items', id);
+            const ils = await App.DB.getAll('itemLayers');
+            for(const il of ils) if(il.itemId === id) await App.DB.delete('itemLayers', il.id);
+        },
+        async get(id) { return App.DB.get('items', id); },
+        async getAll() { 
+            const items = await App.DB.getAll('items');
+            return items.sort((a,b) => b.updatedAt - a.updatedAt);
+        },
+        async getByLayer(layerId) {
+            const ils = await App.DB.getAll('itemLayers');
+            const itemIds = ils.filter(il => il.layerId === layerId).map(il => il.itemId);
+            const items = [];
+            for(const id of itemIds) { const it = await App.DB.get('items', id); if(it) items.push(it); }
+            return items.sort((a,b) => b.updatedAt - a.updatedAt);
+        }
+    },
+
+    // ============================================================
+    // RELATIONSHIPS
+    // ============================================================
+    Relations: {
+        async addItemToLayer(itemId, layerId) {
+            const id = `${itemId}_${layerId}`;
+            const existing = await App.DB.get('itemLayers', id);
+            if(existing) return existing;
+            const rel = { id, itemId, layerId, createdAt: Date.now() };
+            return App.DB.put('itemLayers', rel);
+        },
+        async removeItemFromLayer(itemId, layerId) {
+            return App.DB.delete('itemLayers', `${itemId}_${layerId}`);
+        },
+        async getLayersForItem(itemId) {
+            const ils = await App.DB.getAll('itemLayers');
+            const layerIds = ils.filter(il => il.itemId === itemId).map(il => il.layerId);
+            const layers = [];
+            for(const id of layerIds) { const l = await App.DB.get('layers', id); if(l) layers.push(l); }
+            return layers;
+        },
+        async connectLayers(sourceId, targetId) {
+            const id = `${sourceId}_${targetId}`;
+            if(sourceId === targetId) return;
+            const existing = await App.DB.get('layerRelations', id);
+            if(existing) return;
+            const rel = { id, sourceLayerId: sourceId, targetLayerId: targetId, type: 'related', createdAt: Date.now() };
+            return App.DB.put('layerRelations', rel);
+        },
+        async disconnectLayers(sourceId, targetId) {
+            await App.DB.delete('layerRelations', `${sourceId}_${targetId}`);
+            await App.DB.delete('layerRelations', `${targetId}_${sourceId}`);
+        },
+        async getConnectedLayers(layerId) {
+            const rels = await App.DB.getAll('layerRelations');
+            const connectedIds = rels.filter(r => r.sourceLayerId === layerId || r.targetLayerId === layerId)
+                                    .map(r => r.sourceLayerId === layerId ? r.targetLayerId : r.sourceLayerId);
+            const layers = [];
+            for(const id of [...new Set(connectedIds)]) { const l = await App.DB.get('layers', id); if(l) layers.push(l); }
+            return layers;
+        }
+    },
+
+    // ============================================================
+    // SEARCH
+    // ============================================================
+    Search: {
+        async query(q) {
+            if(!q || q.trim() === '') return [];
+            const term = q.toLowerCase();
+            const results = [];
+            
+            const layers = await App.DB.getAll('layers');
+            layers.forEach(l => {
+                if(l.name.toLowerCase().includes(term) || (l.description && l.description.toLowerCase().includes(term))) {
+                    results.push({ type: 'layer', id: l.id, title: l.name, desc: l.description, timestamp: l.updatedAt });
+                }
+            });
+
+            const items = await App.DB.getAll('items');
+            items.forEach(it => {
+                let matched = false;
+                let desc = '';
+                if(it.title.toLowerCase().includes(term)) { matched = true; desc = it.content || ''; }
+                else if(it.content && it.content.toLowerCase().includes(term)) { matched = true; desc = it.content; }
+                else if(it.tags && it.tags.some(t => t.toLowerCase().includes(term))) { matched = true; desc = `Tag: ${it.tags.join(', ')}`; }
+                
+                if(matched) results.push({ type: it.type, id: it.id, title: it.title, desc: desc.substring(0, 100), timestamp: it.updatedAt });
+            });
+
+            return results.sort((a,b) => b.timestamp - a.timestamp);
+        }
+    },
+
+    // ============================================================
+    // AI & OPENROUTER
+    // ============================================================
+    AI: {
+        async testConnection() {
+            const key = App.state.settings.openrouterKey;
+            if(!key) return { success: false, error: 'No API key provided' };
+            try {
+                const res = await fetch(`${App.config.OPENROUTER_URL}/models`, { headers: { 'Authorization': `Bearer ${key}` }});
+                if(res.ok) return { success: true };
+                const err = await res.json();
+                return { success: false, error: err.error || 'Invalid API key or network error' };
+            } catch(e) { return { success: false, error: e.message }; }
+        },
+        async fetchModels() {
+            const key = App.state.settings.openrouterKey;
+            if(!key) return [];
+            try {
+                const res = await fetch(`${App.config.OPENROUTER_URL}/models`, { headers: { 'Authorization': `Bearer ${key}` }});
+                if(!res.ok) return [];
+                const data = await res.json();
+                await App.saveSetting('cachedModels', data.data);
+                return data.data;
+            } catch(e) { return []; }
+        },
+        getCachedModels() { return App.state.settings.cachedModels || []; },
+        
+        buildContext(layerId, itemId) {
+            let context = "CURRENT CONTEXT:\n";
+            if(layerId) {
+                const layer = App.state.cache.layers?.find(l => l.id === layerId);
+                if(layer) {
+                    context += `LAYER: ${layer.name}\nDESCRIPTION: ${layer.description || 'N/A'}\n`;
+                    const items = App.state.cache.items?.filter(i => App.state.cache.itemLayers?.some(il => il.itemId === i.id && il.layerId === layerId));
+                    if(items && items.length) {
+                        context += "RELEVANT ITEMS:\n";
+                        items.slice(0, 8).forEach(it => {
+                            context += `- [${it.type.toUpperCase()}] ${it.title}: ${(it.content || '').substring(0, 150)}\n`;
+                        });
+                    }
+                    const conns = App.state.cache.relations?.filter(r => r.sourceLayerId === layerId || r.targetLayerId === layerId);
+                    if(conns && conns.length) {
+                        context += "CONNECTED LAYERS:\n";
+                        conns.forEach(c => {
+                            const id = c.sourceLayerId === layerId ? c.targetLayerId : c.sourceLayerId;
+                            const l = App.state.cache.layers?.find(x => x.id === id);
+                            if(l) context += `- ${l.name}\n`;
+                        });
+                    }
+                }
+            }
+            if(itemId) {
+                const item = App.state.cache.items?.find(i => i.id === itemId);
+                if(item) {
+                    context += `\nSELECTED ITEM:\n[${item.type.toUpperCase()}] ${item.title}\n${item.content || ''}\n`;
+                }
+            }
+            return context;
+        },
+
+        async streamChat(prompt, layerId, itemId, onChunk, onAction, onDone, onError) {
+            const key = App.state.settings.openrouterKey;
+            const model = App.state.settings.selectedModel;
+            
+            if(!key || !model) { onError('API Key or Model not configured.'); return; }
+            if(!navigator.onLine) { onError('You are offline. AI requires an internet connection.'); return; }
+
+            const sysPrompt = `You are Layer AI, a contextual workspace assistant. You help users organize their digital context.
+You analyze the provided context and help summarize, brainstorm, or extract tasks.
+When you want to propose creating tasks, format your response EXACTLY like this:
+<action type="create_tasks">
+[{"title": "Task 1"}, {"title": "Task 2"}]
+</action>
+Then write your normal response. Do not modify user data without confirmation. Be concise.`;
+
+            const context = App.AI.buildContext(layerId, itemId);
+            const messages = [
+                { role: "system", content: sysPrompt },
+                { role: "system", content: context },
+                { role: "user", content: prompt }
+            ];
+
+            App.state.abortController = new AbortController();
+
+            try {
+                const res = await fetch(`${App.config.OPENROUTER_URL}/chat/completions`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model, messages, stream: true,
+                        temperature: App.state.settings.temp,
+                        max_tokens: App.state.settings.maxTokens
+                    }),
+                    signal: App.state.abortController.signal
+                });
+
+                if(!res.ok) {
+                    const err = await res.json();
+                    onError(err.error || 'Request failed');
+                    return;
+                }
+
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let fullText = '';
+                let buffer = '';
+
+                while(true) {
+                    const { done, value } = await reader.read();
+                    if(done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+
+                    for(const line of lines) {
+                        if(line.startsWith('data: ')) {
+                            const json = line.slice(6);
+                            if(json === '[DONE]') continue;
+                            try {
+                                const parsed = JSON.parse(json);
+                                const delta = parsed.choices[0]?.delta?.content;
+                                if(delta) {
+                                    fullText += delta;
+                                    onChunk(delta);
+                                }
+                            } catch(e) { /* ignore parse errors for incomplete chunks */ }
+                        }
+                    }
+                }
+
+                const actionRegex = /<action type="create_tasks">([\s\S]*?)<\/action>/;
+                const match = fullText.match(actionRegex);
+                if(match) {
+                    try {
+                        const tasks = JSON.parse(match[1].trim());
+                        onAction({ type: 'create_tasks', tasks, layerId });
+                    } catch(e) { console.error("Failed to parse AI action", e); }
+                }
+                onDone(fullText.replace(actionRegex, '').trim());
+            } catch(err) {
+                if(err.name === 'AbortError') onError('Generation stopped.');
+                else onError(err.message);
+            }
+        }
+    },
+
+    // ============================================================
+    // IMPORT / EXPORT
+    // ============================================================
+    Data: {
+        async export() {
+            const data = {
+                layers: await App.DB.getAll('layers'),
+                items: await App.DB.getAll('items'),
+                itemLayers: await App.DB.getAll('itemLayers'),
+                layerRelations: await App.DB.getAll('layerRelations'),
+                settings: (await App.DB.getAll('settings')).filter(s => s.key !== 'openrouterKey'),
+                exportedAt: new Date().toISOString()
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `layer-export-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        },
+        async import(jsonStr, mode = 'merge') {
+            try {
+                const data = JSON.parse(jsonStr);
+                if(mode === 'replace') {
+                    await App.DB.clear('layers'); await App.DB.clear('items');
+                    await App.DB.clear('itemLayers'); await App.DB.clear('layerRelations');
+                }
+                if(data.layers) for(const l of data.layers) await App.DB.put('layers', l);
+                if(data.items) for(const i of data.items) await App.DB.put('items', i);
+                if(data.itemLayers) for(const il of data.itemLayers) await App.DB.put('itemLayers', il);
+                if(data.layerRelations) for(const r of data.layerRelations) await App.DB.put('layerRelations', r);
+                return true;
+            } catch(e) { return false; }
+        }
+    },
+
+    // ============================================================
+    // ROUTER
+    // ============================================================
+    Router: {
+        init() {
+            if (this._initialized) return;
+            this._initialized = true;
+            window.addEventListener('hashchange', () => App.Router.handle());
+            this.handle();
+        },
+        handle() {
+            const hash = window.location.hash.slice(1) || 'home';
+            const parts = hash.split('/');
+            App.state.currentView = parts[0];
+            App.state.currentLayerId = parts[1] === 'layer' ? parts[2] : null;
+            App.state.currentItemId = parts[1] === 'item' ? parts[2] : null;
+            
+            if(parts[1] === 'layer') App.state.currentView = 'layer';
+            if(parts[1] === 'item') App.state.currentView = 'item';
+            
+            App.UI.render();
+        },
+        navigate(view, id = null) {
+            let hash = view;
+            if(view === 'layer' && id) hash = `layer/layer/${id}`;
+            else if(view === 'item' && id) hash = `item/item/${id}`;
+            window.location.hash = hash;
+        }
+    },
+
+    // ============================================================
+    // EVENTS
+    // ============================================================
+    Events: {
+        bindGlobal() {
+            if (this._initialized) return;
+            this._initialized = true;
+
+            document.addEventListener('keydown', (e) => {
+                if((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); App.UI.openCommandPalette(); }
+                if(e.key === 'q' && !e.target.matches('input, textarea, [contenteditable]')) { e.preventDefault(); App.UI.openQuickCapture(); }
+                if((e.metaKey || e.ctrlKey) && e.shiftKey && e.code === 'Space') { e.preventDefault(); App.UI.openQuickCapture(); }
+                if(e.key === 'Escape') { App.UI.closeModals(); }
+            });
+
+            document.querySelectorAll('[data-nav]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    App.Router.navigate(btn.dataset.nav);
+                    document.getElementById('sidebar').classList.remove('open');
+                });
+            });
+
+            document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+                document.getElementById('sidebar').classList.toggle('open');
+                document.getElementById('context-panel').classList.remove('open');
+            });
+            document.getElementById('mobile-ctx-btn').addEventListener('click', () => {
+                document.getElementById('context-panel').classList.toggle('open');
+                document.getElementById('sidebar').classList.remove('open');
+            });
+            
+            document.getElementById('quick-capture-btn').addEventListener('click', () => App.UI.openQuickCapture());
+
+            document.querySelectorAll('.ctx-tab').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    App.state.contextTab = btn.dataset.ctxTab;
+                    App.UI.renderContextPanel();
+                });
+            });
+
+            // Close drawers when clicking outside on mobile
+            document.getElementById('main-content').addEventListener('click', (e) => {
+                if (window.innerWidth <= 1024) {
+                    const sidebar = document.getElementById('sidebar');
+                    const ctxPanel = document.getElementById('context-panel');
+                    if (!sidebar.contains(e.target) && e.target.id !== 'mobile-menu-btn') {
+                        sidebar.classList.remove('open');
+                    }
+                    if (!ctxPanel.contains(e.target) && e.target.id !== 'mobile-ctx-btn') {
+                        ctxPanel.classList.remove('open');
+                    }
+                }
+            });
+        }
+    },
+
+    // ============================================================
+    // UI & RENDERING
+    // ============================================================
+    UI: {
+        async render() {
+            App.state.cache = App.state.cache || {};
+            App.state.cache.layers = await App.Layers.getAll();
+            App.state.cache.items = await App.Items.getAll();
+            App.state.cache.itemLayers = await App.DB.getAll('itemLayers');
+            App.state.cache.relations = await App.DB.getAll('layerRelations');
+
+            this.renderSidebar();
+            await this.renderView();
+            this.renderContextPanel();
+        },
+
+        renderSidebar() {
+            const container = document.getElementById('sb-layers');
+            const layers = App.state.cache.layers || [];
+            if(layers.length === 0) {
+                container.innerHTML = `<div class="text-xs text-muted" style="padding: 8px 10px;">No layers yet</div>`;
+                return;
+            }
+            container.innerHTML = layers.map(l => `
+                <button class="sb-item ${App.state.currentLayerId === l.id ? 'active' : ''}" onclick="App.Router.navigate('layer', '${l.id}')">
+                    <div class="layer-icon" style="background: ${l.accent}20; color: ${l.accent}">${l.icon}</div>
+                    ${l.name}
+                </button>
+            `).join('');
+            
+            document.querySelectorAll('[data-nav]').forEach(b => b.classList.remove('active'));
+            const activeNav = document.querySelector(`[data-nav="${App.state.currentView === 'layer' || App.state.currentView === 'item' ? App.state.currentView : App.state.currentView}"]`);
+            if(activeNav) activeNav.classList.add('active');
+            if(App.state.currentView === 'layer' || App.state.currentView === 'item') {
+                 const itemsNav = document.querySelector(`[data-nav="layers"]`);
+                 if(itemsNav) itemsNav.classList.add('active');
+            }
+        },
+
+        async renderView() {
+            const container = document.getElementById('view-container');
+            const view = App.state.currentView;
+            container.innerHTML = '';
+            
+            if(view === 'home') await this.Views.home(container);
+            else if(view === 'layers') await this.Views.layers(container);
+            else if(view === 'layer') await this.Views.layer(container);
+            else if(view === 'items') await this.Views.items(container);
+            else if(view === 'item') await this.Views.item(container);
+            else if(view === 'search') await this.Views.search(container);
+            else if(view === 'ai') await this.Views.ai(container);
+            else if(view === 'settings') await this.Views.settings(container);
+            
+            const title = document.querySelector('.mobile-topbar h2');
+            const titles = { home: 'Home', layers: 'Layers', layer: 'Layer', items: 'All Items', item: 'Item', search: 'Search', ai: 'AI Assistant', settings: 'Settings' };
+            title.textContent = titles[view] || 'Layer';
+        },
+
+        Views: {
+            async home(c) {
+                const layers = App.state.cache.layers || [];
+                const items = App.state.cache.items || [];
+                const tasks = items.filter(i => i.type === 'task' && i.metadata.status !== 'done');
+                const ideas = items.filter(i => i.type === 'idea').slice(0, 3);
+                const recent = items.slice(0, 4);
+                const hour = new Date().getHours();
+                const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+
+                let html = `<div class="view">
+                    <div class="view-header">
+                        <h1 class="view-title">${greeting}, ${App.state.user.username}.</h1>
+                        <p class="view-subtitle">What are you working on?</p>
+                    </div>`;
+
+                if(layers.length === 0) {
+                    html += `<div class="empty-state">
+                        <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 2 7 12 12 22 7 12 2"/></svg>
+                        <h3 class="empty-state-title">Start with a context.</h3>
+                        <p class="empty-state-desc">Create your first Layer to organize your work around something that matters.</p>
+                        <button class="btn btn-primary" onclick="App.UI.openCreateLayer()">Create your first Layer</button>
+                    </div></div>`;
+                    c.innerHTML = html; return;
+                }
+
+                if(recent.length > 0) {
+                    html += `<h3 class="text-sm text-muted" style="text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Continue</h3><div class="grid mb-4">`;
+                    recent.forEach(it => {
+                        html += `<div class="card" onclick="App.Router.navigate('item', '${it.id}')">
+                            <div class="card-title">${this.icons()[it.type]} ${it.title}</div>
+                            <div class="card-desc">${it.content || 'No content'}</div>
+                            <div class="card-meta"><span>${it.type}</span><span>${App.utils.formatTime(it.updatedAt)}</span></div>
+                        </div>`;
+                    });
+                    html += `</div>`;
+                }
+
+                html += `<div class="flex justify-between items-center mt-6 mb-4"><h3 class="text-sm text-muted" style="text-transform: uppercase; letter-spacing: 1px;">Active Layers</h3></div><div class="grid mb-4">`;
+                layers.slice(0, 4).forEach(l => {
+                    const itemCount = App.state.cache.itemLayers.filter(il => il.layerId === l.id).length;
+                    html += `<div class="card" onclick="App.Router.navigate('layer', '${l.id}')">
+                        <div class="card-title"><div class="layer-icon" style="background: ${l.accent}20; color: ${l.accent}">${l.icon}</div> ${l.name}</div>
+                        <div class="card-desc">${l.description || 'No description'}</div>
+                        <div class="card-meta"><span>${itemCount} items</span><span>Updated ${App.utils.formatTime(l.updatedAt)}</span></div>
+                    </div>`;
+                });
+                html += `</div>`;
+
+                if(tasks.length > 0 || ideas.length > 0) {
+                    html += `<div class="grid mt-6" style="grid-template-columns: 1fr 1fr;">`;
+                    if(tasks.length > 0) {
+                        html += `<div><h3 class="text-sm text-muted mb-2" style="text-transform: uppercase; letter-spacing: 1px;">Pending Tasks</h3>`;
+                        tasks.slice(0,4).forEach(t => {
+                            html += `<div class="card mb-4" onclick="App.Router.navigate('item', '${t.id}')">
+                                <div class="card-title">${this.icons().task} ${t.title}</div>
+                                <div class="card-meta"><span class="badge ${t.metadata.priority || 'medium'}">${t.metadata.priority || 'Medium'}</span><span>${t.metadata.status || 'todo'}</span></div>
+                            </div>`;
+                        });
+                        html += `</div>`;
+                    }
+                    if(ideas.length > 0) {
+                        html += `<div><h3 class="text-sm text-muted mb-2" style="text-transform: uppercase; letter-spacing: 1px;">Recent Ideas</h3>`;
+                        ideas.forEach(i => {
+                            html += `<div class="card mb-4" onclick="App.Router.navigate('item', '${i.id}')">
+                                <div class="card-title">${this.icons().idea} ${i.title}</div>
+                                <div class="card-desc">${i.content || 'No details'}</div>
+                            </div>`;
+                        });
+                        html += `</div>`;
+                    }
+                    html += `</div>`;
+                }
+
+                html += `</div>`;
+                c.innerHTML = html;
+            },
+
+            async layers(c) {
+                const layers = App.state.cache.layers || [];
+                let html = `<div class="view">
+                    <div class="flex justify-between items-center view-header">
+                        <div><h1 class="view-title">Layers</h1><p class="view-subtitle">Organize your world by context.</p></div>
+                        <button class="btn btn-primary" onclick="App.UI.openCreateLayer()">New Layer</button>
+                    </div>`;
+                
+                if(layers.length === 0) {
+                     html += `<div class="empty-state"><h3 class="empty-state-title">No Layers yet</h3><p class="empty-state-desc">Create a Layer for your projects, studies, or ideas.</p><button class="btn btn-primary" onclick="App.UI.openCreateLayer()">Create Layer</button></div>`;
+                } else {
+                    html += `<div class="grid">`;
+                    layers.forEach(l => {
+                        const itemCount = App.state.cache.itemLayers.filter(il => il.layerId === l.id).length;
+                        html += `<div class="card" onclick="App.Router.navigate('layer', '${l.id}')" oncontextmenu="App.UI.showCtxMenu(event, 'layer', '${l.id}')">
+                            <div class="card-title"><div class="layer-icon" style="background: ${l.accent}20; color: ${l.accent}">${l.icon}</div> ${l.name}</div>
+                            <div class="card-desc">${l.description || 'No description'}</div>
+                            <div class="card-meta"><span>${itemCount} items</span></div>
+                        </div>`;
+                    });
+                    html += `</div>`;
+                }
+                html += `</div>`;
+                c.innerHTML = html;
+            },
+
+            async layer(c) {
+                const l = await App.Layers.get(App.state.currentLayerId);
+                if(!l) { App.Router.navigate('layers'); return; }
+                
+                const items = await App.Items.getByLayer(l.id);
+                const connected = await App.Relations.getConnectedLayers(l.id);
+                
+                const types = ['all', 'note', 'task', 'idea', 'link'];
+                let html = `<div class="view">
+                    <div class="layer-header">
+                        <div class="layer-icon" style="width: 48px; height: 48px; font-size: 20px; background: ${l.accent}20; color: ${l.accent}">${l.icon}</div>
+                        <div class="layer-header-info">
+                            <h1>${l.name}</h1>
+                            <p>${l.description || 'No description'}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="btn btn-secondary" onclick="App.UI.openAddItem('${l.id}')">Add Item</button>
+                            <button class="btn btn-secondary" onclick="App.UI.askAI('Summarize this Layer')">Ask AI</button>
+                            <button class="btn btn-danger" onclick="App.UI.deleteLayer('${l.id}')">Delete</button>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 mb-6" id="layer-filters">
+                        ${types.map(t => `<button class="btn btn-ghost text-sm" data-filter="${t}">${t}</button>`).join('')}
+                        <button class="btn btn-ghost text-sm" data-filter="connections">Connections</button>
+                    </div>
+                    <div id="layer-content" class="grid"></div>
+                </div>`;
+                c.innerHTML = html;
+                
+                const renderItems = (filter = 'all') => {
+                    const cont = document.getElementById('layer-content');
+                    if(filter === 'connections') {
+                        cont.style.gridTemplateColumns = '1fr';
+                        cont.innerHTML = `<div class="card"><h3 class="mb-4">Connected Layers</h3><div class="flex flex-col gap-2">` + 
+                            (connected.length ? connected.map(cl => `<div class="flex items-center justify-between p-2" style="background: var(--bg-surface); border-radius: 6px;"><span>${cl.name}</span><button class="btn btn-ghost text-xs" onclick="App.Router.navigate('layer', '${cl.id}')">Open</button></div>`).join('') : `<p class="text-muted">No connections yet.</p>`) +
+                            `</div><button class="btn btn-secondary mt-4" onclick="App.UI.openConnectLayer('${l.id}')">Connect Layer</button></div>`;
+                        return;
+                    }
+                    const filtered = filter === 'all' ? items : items.filter(i => i.type === filter);
+                    if(filtered.length === 0) {
+                        cont.innerHTML = `<div class="empty-state"><h3 class="empty-state-title">This Layer is empty</h3><p class="empty-state-desc">Capture an idea, write a note, or add a task.</p><button class="btn btn-primary" onclick="App.UI.openAddItem('${l.id}')">Add Item</button></div>`;
+                    } else {
+                        cont.style.gridTemplateColumns = 'repeat(auto-fill, minmax(240px, 1fr))';
+                        cont.innerHTML = filtered.map(it => this.renderItemCard(it)).join('');
+                    }
+                };
+                
+                renderItems();
+                document.querySelectorAll('#layer-filters button').forEach(btn => {
+                    btn.onclick = () => {
+                        document.querySelectorAll('#layer-filters button').forEach(b => b.classList.remove('btn-secondary'));
+                        btn.classList.add('btn-secondary');
+                        renderItems(btn.dataset.filter);
+                    };
+                });
+                document.querySelector('#layer-filters button').classList.add('btn-secondary');
+            },
+
+            async items(c) {
+                const items = App.state.cache.items || [];
+                let html = `<div class="view"><div class="view-header"><h1 class="view-title">All Items</h1><p class="view-subtitle">Everything in your workspace.</p></div>`;
+                if(items.length === 0) {
+                    html += `<div class="empty-state"><h3 class="empty-state-title">No Items yet</h3><p class="empty-state-desc">Use Quick Capture to create your first item.</p></div>`;
+                } else {
+                    html += `<div class="grid">` + items.map(it => this.renderItemCard(it)).join('') + `</div>`;
+                }
+                html += `</div>`;
+                c.innerHTML = html;
+            },
+
+            async item(c) {
+                const it = await App.Items.get(App.state.currentItemId);
+                if(!it) { App.Router.navigate('items'); return; }
+                const itemLayers = await App.Relations.getLayersForItem(it.id);
+                
+                let html = `<div class="item-editor">
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex gap-2 items-center">
+                            <span class="badge">${it.type}</span>
+                            ${it.type === 'task' ? `<select class="input" style="width: auto; padding: 4px;" onchange="App.UI.updateItemField('metadata.status', this.value)">
+                                <option value="todo" ${it.metadata.status==='todo'?'selected':''}>To Do</option>
+                                <option value="progress" ${it.metadata.status==='progress'?'selected':''}>In Progress</option>
+                                <option value="done" ${it.metadata.status==='done'?'selected':''}>Done</option>
+                            </select>` : ''}
+                        </div>
+                        <span class="text-xs text-muted" id="save-status">Saved</span>
+                    </div>
+                    <input type="text" class="item-title-input" value="${App.utils.escapeHtml(it.title)}" oninput="App.UI.updateItemField('title', this.value)" placeholder="Title">
+                    <div class="meta-row">
+                        <div class="flex gap-2 items-center">
+                            <span class="text-xs text-muted">Layers:</span>
+                            ${itemLayers.map(l => `<span class="tag" style="color: ${l.accent}">${l.name} <button onclick="App.UI.removeLayerFromItem('${l.id}')" style="background:none;border:none;color:inherit;cursor:pointer;padding:0 0 0 4px;">x</button></span>`).join('')}
+                            <button class="btn btn-ghost text-xs" onclick="App.UI.openAddLayerToItem()">+ Add</button>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <textarea class="item-body-input" oninput="App.UI.updateItemField('content', this.value)" placeholder="Start writing...">${App.utils.escapeHtml(it.content || '')}</textarea>
+                    </div>
+                    <div class="meta-row" style="border-top: 1px solid var(--border-subtle); margin-top: 24px;">
+                        <span class="text-xs text-muted">Created ${App.utils.formatDay(it.createdAt)} • Updated ${App.utils.formatDay(it.updatedAt)}</span>
+                    </div>
+                </div>`;
+                c.innerHTML = html;
+            },
+
+            async search(c) {
+                let html = `<div class="view">
+                    <div class="view-header"><h1 class="view-title">Search</h1><p class="view-subtitle">Find anything across your workspace.</p></div>
+                    <input type="text" class="input mb-4" id="search-input" placeholder="Type to search..." autofocus>
+                    <div id="search-results" class="flex flex-col gap-2"></div>
+                </div>`;
+                c.innerHTML = html;
+                
+                const input = document.getElementById('search-input');
+                const resultsDiv = document.getElementById('search-results');
+                
+                const doSearch = App.utils.debounce(async () => {
+                    const q = input.value;
+                    if(!q.trim()) { resultsDiv.innerHTML = ''; return; }
+                    const results = await App.Search.query(q);
+                    if(results.length === 0) {
+                        resultsDiv.innerHTML = `<div class="text-muted p-4">No results found for "${q}"</div>`;
+                        return;
+                    }
+                    resultsDiv.innerHTML = results.map(r => `
+                        <div class="card" onclick="App.Router.navigate('${r.type === 'layer' ? 'layer' : 'item'}', '${r.id}')">
+                            <div class="card-title">${this.icons()[r.type] || '📄'} ${App.utils.escapeHtml(r.title)}</div>
+                            <div class="card-desc">${App.utils.escapeHtml(r.desc || '')}</div>
+                            <div class="card-meta"><span class="badge">${r.type}</span><span>${App.utils.formatTime(r.timestamp)}</span></div>
+                        </div>
+                    `).join('');
+                }, 200);
+                
+                input.addEventListener('input', doSearch);
+            },
+
+            async ai(c) {
+                let html = `<div class="view" style="display: flex; flex-direction: column; height: 100%; max-height: calc(100vh - 32px);">
+                    <div class="view-header" style="flex-shrink: 0;">
+                        <h1 class="view-title">AI Assistant</h1>
+                        <p class="view-subtitle">General chat, powered by OpenRouter.</p>
+                    </div>`;
+                
+                if(!App.state.settings.openrouterKey) {
+                    html += `<div class="card"><h3 class="mb-2">Connect Layer to AI</h3><p class="text-muted mb-4">Layer uses OpenRouter and lets you choose the model you want. Add your own OpenRouter API key to enable AI.</p><button class="btn btn-primary" onclick="App.Router.navigate('settings')">Add API Key</button></div></div>`;
+                    c.innerHTML = html;
+                    return;
+                }
+
+                if (!App.state.generalConversationId) {
+                    App.state.generalConversationId = App.utils.uuid();
+                    await App.DB.put('aiConversations', { id: App.state.generalConversationId, layerId: null, itemId: null, createdAt: Date.now() });
+                }
+
+                html += `
+                    <div class="ai-chat-container" id="ai-chat-container" style="flex: 1; overflow-y: auto; padding-bottom: 16px;">
+                        <div id="ai-chat-messages" class="flex flex-col gap-4"></div>
+                    </div>
+                    <div class="ai-chat-footer" style="position: sticky; bottom: 0; background: var(--bg-base); padding: 16px 0 0; border-top: 1px solid var(--border-subtle); margin-top: 16px; flex-shrink: 0;">
+                        <div class="flex gap-2">
+                            <input type="text" class="input" id="ai-chat-input" placeholder="Ask Layer AI anything..." onkeydown="if(event.key==='Enter') App.UI.sendGeneralAI()">
+                            <button class="btn btn-primary" onclick="App.UI.sendGeneralAI()">Send</button>
+                        </div>
+                        <div class="flex gap-2 mt-2">
+                            <button class="btn btn-ghost text-xs" onclick="App.UI.clearGeneralConversation()">Clear Chat</button>
+                        </div>
+                    </div>
+                </div>`;
+                c.innerHTML = html;
+
+                await App.UI.renderGeneralAIMessages();
+            },
+
+            async settings(c) {
+                const key = App.state.settings.openrouterKey || '';
+                const model = App.state.settings.selectedModel || '';
+                const models = App.AI.getCachedModels();
+                const theme = App.state.settings.theme;
+                const username = App.state.user?.username || 'User';
+                
+                let html = `<div class="view">
+                    <div class="view-header"><h1 class="view-title">Settings</h1></div>
+                    
+                    <div class="card mb-4">
+                        <h3 class="mb-2">Account</h3>
+                        <p class="text-sm text-muted mb-4">Logged in as <strong>${username}</strong></p>
+                        <button class="btn btn-danger" onclick="App.Auth.logout()">Logout</button>
+                    </div>
+
+                    <div class="card mb-4">
+                        <h3 class="mb-2">AI Configuration</h3>
+                        <div class="form-group">
+                            <label class="form-label">OpenRouter API Key</label>
+                            <input type="password" class="input" id="api-key-input" value="${key}" placeholder="sk-or-...">
+                            <p class="text-xs text-muted mt-2">Your API key is stored locally in this browser. Anyone with access to this browser profile may potentially access locally stored credentials.</p>
+                        </div>
+                        <div class="flex gap-2 mb-4">
+                            <button class="btn btn-secondary" onclick="App.UI.testAI()">Test Connection</button>
+                            <button class="btn btn-primary" onclick="App.UI.saveAIKey()">Save Key</button>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Model Selection</label>
+                            <div class="model-search-container">
+                                <input type="text" class="input mb-2" id="model-search" placeholder="Search models (e.g. GPT, Claude)..." oninput="App.UI.filterModels()">
+                                <div class="model-search-results" id="model-search-results">
+                                    ${models.length > 0 ? models.slice(0, 20).map(m => `
+                                        <div class="model-item ${m.id === model ? 'selected' : ''}" onclick="App.UI.selectModel('${m.id}')">
+                                            <span class="model-item-name">${m.name}</span>
+                                            <span class="model-item-id">${m.id}</span>
+                                        </div>
+                                    `).join('') : '<div class="text-xs text-muted p-2">No models loaded. Fetch models or enter manually below.</div>'}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Model ID (Manual Entry)</label>
+                            <input type="text" class="input" id="model-manual" value="${model}" placeholder="e.g. openai/gpt-4o">
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="btn btn-secondary" onclick="App.UI.fetchModels()">Fetch Models</button>
+                            <button class="btn btn-primary" onclick="App.UI.saveModel()">Save Model</button>
+                        </div>
+                        <p class="text-xs text-muted mt-4">AI requests are made using your OpenRouter account/API key and may incur provider charges according to your OpenRouter setup.</p>
+                    </div>
+
+                    <div class="card mb-4">
+                        <h3 class="mb-2">Appearance</h3>
+                        <div class="form-group">
+                            <label class="form-label">Theme</label>
+                            <select class="input" onchange="App.UI.changeTheme(this.value)">
+                                <option value="dark" ${theme==='dark'?'selected':''}>Dark</option>
+                                <option value="light" ${theme==='light'?'selected':''}>Light</option>
+                                <option value="system" ${theme==='system'?'selected':''}>System</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="card mb-4">
+                        <h3 class="mb-2">Data Management</h3>
+                        <div class="flex gap-2 flex-wrap">
+                            <button class="btn btn-secondary" onclick="App.Data.export()">Export Data</button>
+                            <button class="btn btn-secondary" onclick="App.UI.importData()">Import Data</button>
+                            <button class="btn btn-danger" onclick="App.UI.clearData()">Clear Local Data</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="mb-2">Keyboard Shortcuts</h3>
+                        <div class="flex flex-col gap-2 text-sm">
+                            <div class="flex justify-between"><span>Quick Capture</span><kbd>Q</kbd></div>
+                            <div class="flex justify-between"><span>Command Palette / Search</span><kbd>Cmd/Ctrl + K</kbd></div>
+                            <div class="flex justify-between"><span>Close Modals</span><kbd>Esc</kbd></div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-6 creator-card">
+                        <img src="https://res.cloudinary.com/prjgzqvy/image/upload/v1786899509/image_1776070140355_zjbr8s.jpg" alt="Creator" class="creator-img">
+                        <h3>Aathir Hussain Bhat</h3>
+                        <p class="text-muted text-sm">Creator of Layer</p>
+                        <div class="social-links">
+                            <a href="https://youtube.com/@aathir_hussain_bhat.?si=3XMwPJfQZ4JHKisR" target="_blank" rel="noopener noreferrer" class="social-btn" title="YouTube">
+                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                            </a>
+                            <a href="https://www.facebook.com/AathirHussainBhat/" target="_blank" rel="noopener noreferrer" class="social-btn" title="Facebook">
+                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                            </a>
+                            <a href="https://www.instagram.com/bhat_boyka/" target="_blank" rel="noopener noreferrer" class="social-btn" title="Instagram">
+                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg>
+                            </a>
+                            <a href="https://github.com/Aathir-Hussain-Bhat" target="_blank" rel="noopener noreferrer" class="social-btn" title="GitHub">
+                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+                            </a>
+                            <a href="https://theresanaiforthat.com/@bhatboyka/" target="_blank" rel="noopener noreferrer" class="social-btn" title="There's An AI For That">
+                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L13.09 8.26L19 9L13.09 9.74L12 16L10.91 9.74L5 9L10.91 8.26L12 2Z"/></svg>
+                            </a>
+                            <a href="https://www.linkedin.com/in/bhat-boyka-549892414" target="_blank" rel="noopener noreferrer" class="social-btn" title="LinkedIn">
+                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                            </a>
+                            <a href="https://aathir-hussain-bhat.github.io/BHAT-NETWORK-/" target="_blank" rel="noopener noreferrer" class="social-btn" title="Network">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>`;
+                c.innerHTML = html;
+            },
+
+            icons() {
+                return {
+                    note: '📝', task: '✓', idea: '💡', link: '🔗', file: '📎', layer: '🗂️'
+                };
+            },
+
+            renderItemCard(it) {
+                let meta = '';
+                if(it.type === 'task') meta = `<span class="badge ${it.metadata.priority || 'medium'}">${it.metadata.priority || 'Medium'}</span>`;
+                else if(it.type === 'idea') meta = `<span class="badge">Idea</span>`;
+                return `<div class="card" onclick="App.Router.navigate('item', '${it.id}')" oncontextmenu="App.UI.showCtxMenu(event, 'item', '${it.id}')">
+                    <div class="card-title">${this.icons()[it.type]} ${it.title}</div>
+                    <div class="card-desc">${it.content || 'No content'}</div>
+                    <div class="card-meta"><div>${meta}</div><span>${App.utils.formatTime(it.updatedAt)}</span></div>
+                </div>`;
+            }
+        },
+
+        async renderContextPanel() {
+            const header = document.getElementById('ctx-info');
+            const content = document.getElementById('ctx-content');
+            const footer = document.getElementById('ctx-footer');
+            
+            document.querySelectorAll('.ctx-tab').forEach(t => t.classList.toggle('active', t.dataset.ctxTab === App.state.contextTab));
+
+            header.innerHTML = '';
+            content.innerHTML = '';
+            footer.innerHTML = '';
+
+            if(App.state.contextTab === 'info') {
+                if(App.state.currentLayerId) {
+                    const l = await App.Layers.get(App.state.currentLayerId);
+                    header.innerHTML = `<strong>${l.name}</strong>`;
+                    const items = await App.Items.getByLayer(l.id);
+                    const conns = await App.Relations.getConnectedLayers(l.id);
+                    content.innerHTML = `<div class="flex flex-col gap-4">
+                        <div><h4 class="text-xs text-muted mb-2">DESCRIPTION</h4><p class="text-sm">${l.description || 'N/A'}</p></div>
+                        <div><h4 class="text-xs text-muted mb-2">ITEMS (${items.length})</h4><div class="flex flex-col gap-1">${items.slice(0,5).map(i => `<div class="text-sm" style="padding: 4px 0; border-bottom: 1px solid var(--border-subtle)">${i.title}</div>`).join('') || 'None'}</div></div>
+                        <div><h4 class="text-xs text-muted mb-2">CONNECTIONS (${conns.length})</h4><div class="flex flex-col gap-1">${conns.map(c => `<div class="text-sm">${c.name}</div>`).join('') || 'None'}</div></div>
+                    </div>`;
+                } else if(App.state.currentItemId) {
+                    const it = await App.Items.get(App.state.currentItemId);
+                    const layers = await App.Relations.getLayersForItem(it.id);
+                    header.innerHTML = `<strong>${it.title}</strong>`;
+                    content.innerHTML = `<div class="flex flex-col gap-4">
+                        <div><h4 class="text-xs text-muted mb-2">TYPE</h4><p class="text-sm">${it.type}</p></div>
+                        <div><h4 class="text-xs text-muted mb-2">LAYERS (${layers.length})</h4><div class="flex flex-col gap-1">${layers.map(l => `<div class="text-sm">${l.name}</div>`).join('') || 'None'}</div></div>
+                    </div>`;
+                } else {
+                    content.innerHTML = `<p class="text-muted text-sm">Select a Layer or Item to see context.</p>`;
+                }
+            } else {
+                if(App.state.currentLayerId) header.innerHTML = `Context: ${(await App.Layers.get(App.state.currentLayerId))?.name || ''}`;
+                else if(App.state.currentItemId) header.innerHTML = `Context: ${(await App.Items.get(App.state.currentItemId))?.title || ''}`;
+                else header.innerHTML = `Global Assistant`;
+                
+                if(!App.state.settings.openrouterKey) {
+                    content.innerHTML = `<div class="empty-state" style="padding: 24px 0;"><p class="text-sm text-muted mb-4">Configure OpenRouter to enable AI.</p><button class="btn btn-primary" onclick="App.Router.navigate('settings')">Settings</button></div>`;
+                    return;
+                }
+
+                if(!App.state.currentConversationId) {
+                    App.state.currentConversationId = App.utils.uuid();
+                    await App.DB.put('aiConversations', { id: App.state.currentConversationId, layerId: App.state.currentLayerId, itemId: App.state.currentItemId, createdAt: Date.now() });
+                }
+                
+                const msgs = (await App.DB.getAll('aiMessages')).filter(m => m.conversationId === App.state.currentConversationId).sort((a,b) => a.createdAt - b.createdAt);
+                
+                let html = `<div id="ai-messages" class="flex flex-col gap-4">`;
+                if(msgs.length === 0) {
+                    html += `<div class="ai-suggestions">
+                        <button class="ai-suggestion" onclick="App.UI.askAI('Summarize this Layer')">Summarize this context</button>
+                        <button class="ai-suggestion" onclick="App.UI.askAI('What should I work on next?')">What should I work on next?</button>
+                        <button class="ai-suggestion" onclick="App.UI.askAI('Find related Ideas')">Find related Ideas</button>
+                        <button class="ai-suggestion" onclick="App.UI.askAI('Turn this into Tasks')">Turn this into Tasks</button>
+                    </div>`;
+                } else {
+                    msgs.forEach(m => {
+                        html += `<div class="ai-msg ai-msg-${m.role}">
+                            <div class="ai-msg-role">${m.role}</div>
+                            <div class="ai-msg-content">${App.utils.escapeHtml(m.content).replace(/\n/g, '<br>')}</div>
+                            ${m.action ? `<div class="ai-action-card"><div class="ai-action-title">Proposed Action: Create Tasks</div>${m.action.tasks.map(t => `<div class="ai-action-item">${t.title}</div>`).join('')}<button class="btn btn-primary mt-2" onclick="App.UI.confirmAction('${m.id}')">Create ${m.action.tasks.length} Tasks</button></div>` : ''}
+                        </div>`;
+                    });
+                }
+                html += `</div>`;
+                content.innerHTML = html;
+                content.scrollTop = content.scrollHeight;
+
+                footer.innerHTML = `
+                    <div class="flex gap-2">
+                        <input type="text" class="input" id="ai-input" placeholder="Ask Layer AI..." onkeydown="if(event.key==='Enter') App.UI.sendAI()">
+                        <button class="btn btn-primary" onclick="App.UI.sendAI()">Send</button>
+                    </div>
+                    <div class="flex gap-2 mt-2">
+                        <button class="btn btn-ghost text-xs" onclick="App.UI.clearConversation()">Clear</button>
+                    </div>
+                `;
+            }
+        },
+
+        // --- Authentication UI ---
+        showLogin() {
+            const root = document.getElementById('modal-root');
+            root.innerHTML = `
+                <div class="login-overlay">
+                    <div class="login-card">
+                        <div class="login-logo">Layer<span>.</span></div>
+                        <h3 class="modal-title" style="text-align: center; margin-bottom: 8px;">Welcome back</h3>
+                        <p class="text-muted" style="text-align: center; margin-bottom: 24px;">Your context, organized.</p>
+                        
+                        <div id="login-error" class="text-sm" style="color: #f87171; margin-bottom: 12px; text-align: center; display: none;"></div>
+                        
+                        <div class="form-group">
+                            <input type="text" class="input" id="login-user" placeholder="Username" onkeydown="if(event.key==='Enter') document.getElementById('login-pass').focus()">
+                        </div>
+                        <div class="form-group">
+                            <input type="password" class="input" id="login-pass" placeholder="Password" onkeydown="if(event.key==='Enter') App.UI.handleLogin()">
+                        </div>
+                        
+                        <button class="btn btn-primary w-full" style="justify-content: center; margin-bottom: 12px;" onclick="App.UI.handleLogin()">Login</button>
+                        <p class="text-sm text-muted" style="text-align: center;">
+                            Don't have an account? <a href="#" onclick="App.UI.toggleAuthMode(); return false;" id="auth-mode-link">Register</a>
+                        </p>
+                    </div>
+                </div>
+            `;
+        },
+
+        toggleAuthMode() {
+            const link = document.getElementById('auth-mode-link');
+            const title = document.querySelector('.login-card .modal-title');
+            const btn = document.querySelector('.login-card .btn-primary');
+            if (link.textContent === 'Register') {
+                link.textContent = 'Login';
+                title.textContent = 'Create account';
+                btn.textContent = 'Register';
+            } else {
+                link.textContent = 'Register';
+                title.textContent = 'Welcome back';
+                btn.textContent = 'Login';
+            }
+        },
+
+        async handleLogin() {
+            const u = document.getElementById('login-user').value;
+            const p = document.getElementById('login-pass').value;
+            const isRegister = document.getElementById('auth-mode-link').textContent === 'Login';
+            const res = isRegister ? App.Auth.register(u, p) : App.Auth.login(u, p);
+            if (res.success) {
+                this.closeModals();
+                await App.init();
+            } else {
+                const err = document.getElementById('login-error');
+                err.textContent = res.error;
+                err.style.display = 'block';
+            }
+        },
+
+        // --- PWA Install Banner UI ---
+        showInstallBanner() {
+            if (document.getElementById('pwa-install-banner')) return;
+            const root = document.getElementById('pwa-banner-root');
+            root.innerHTML = `
+                <div class="pwa-banner" id="pwa-install-banner">
+                    <div class="pwa-banner-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    </div>
+                    <div class="pwa-banner-text">
+                        <div class="pwa-banner-title">Install Layer</div>
+                        <div class="pwa-banner-desc">Keep your workspace one tap away.</div>
+                    </div>
+                    <div class="pwa-banner-actions">
+                        <button class="btn btn-primary" style="padding: 4px 12px; font-size: 12px;" onclick="App.PWA.doInstall()">Install</button>
+                        <button class="btn btn-ghost" style="padding: 0; font-size: 11px; color: var(--text-muted);" onclick="App.PWA.dismissInstall()">Later</button>
+                    </div>
+                </div>
+            `;
+        },
+        hideInstallBanner() {
+            const banner = document.getElementById('pwa-install-banner');
+            if(banner) banner.remove();
+        },
+
+        // --- Modals & Actions ---
+        openQuickCapture() {
+            this.closeModals();
+            const root = document.getElementById('modal-root');
+            root.innerHTML = `
+                <div class="modal-overlay qc-overlay" onclick="if(event.target===this) App.UI.closeModals()">
+                    <div class="modal qc-modal">
+                        <input type="text" class="qc-input" id="qc-text" placeholder="Capture something..." autofocus>
+                        <div class="qc-footer">
+                            <div class="qc-types">
+                                <button class="qc-type-btn active" data-type="note">Note</button>
+                                <button class="qc-type-btn" data-type="idea">Idea</button>
+                                <button class="qc-type-btn" data-type="task">Task</button>
+                                <button class="qc-type-btn" data-type="link">Link</button>
+                            </div>
+                            <button class="btn btn-primary" onclick="App.UI.saveQuickCapture()">Capture</button>
+                        </div>
+                    </div>
+                </div>`;
+            let qcType = 'note';
+            root.querySelectorAll('.qc-type-btn').forEach(b => {
+                b.onclick = () => {
+                    root.querySelectorAll('.qc-type-btn').forEach(x => x.classList.remove('active'));
+                    b.classList.add('active');
+                    qcType = b.dataset.type;
+                };
+            });
+            document.getElementById('qc-text').focus();
+        },
+        async saveQuickCapture() {
+            const text = document.getElementById('qc-text').value;
+            const type = document.querySelector('.qc-type-btn.active').dataset.type;
+            if(!text.trim()) return this.closeModals();
+            
+            let data = { title: text, content: '' };
+            if(type === 'link' && App.utils.isValidUrl(text)) { data.title = text; data.metadata = { url: text }; }
+            else if(type === 'task') { data.metadata = { status: 'todo', priority: 'medium' }; }
+            
+            if(App.state.currentLayerId) data.layerId = App.state.currentLayerId;
+            
+            await App.Items.create(type, data);
+            this.closeModals();
+            this.showSnackbar(`${type.charAt(0).toUpperCase() + type.slice(1)} captured`);
+            await this.render();
+        },
+        
+        openCommandPalette() {
+            this.closeModals();
+            const root = document.getElementById('modal-root');
+            root.innerHTML = `
+                <div class="modal-overlay cp-overlay" onclick="if(event.target===this) App.UI.closeModals()">
+                    <div class="modal cp-modal">
+                        <input type="text" class="cp-search" id="cp-search" placeholder="Search or type a command..." autofocus>
+                        <div class="cp-results" id="cp-results"></div>
+                    </div>
+                </div>`;
+            const input = document.getElementById('cp-search');
+            const results = document.getElementById('cp-results');
+            
+            const commands = [
+                { title: 'Create Layer', type: 'Action', action: () => { this.closeModals(); this.openCreateLayer(); } },
+                { title: 'Create Note', type: 'Action', action: () => { this.closeModals(); this.openAddItem(null, 'note'); } },
+                { title: 'Create Task', type: 'Action', action: () => { this.closeModals(); this.openAddItem(null, 'task'); } },
+                { title: 'Open AI Assistant', type: 'Navigation', action: () => { this.closeModals(); App.Router.navigate('ai'); } },
+                { title: 'Open Settings', type: 'Navigation', action: () => { this.closeModals(); App.Router.navigate('settings'); } },
+                { title: 'Quick Capture', type: 'Action', action: () => { this.closeModals(); this.openQuickCapture(); } }
+            ];
+            
+            const renderResults = (q) => {
+                let res = [];
+                if(!q) res = commands;
+                else {
+                    res = commands.filter(c => c.title.toLowerCase().includes(q.toLowerCase()));
+                    App.Search.query(q).then(items => {
+                        if(items.length > 0) {
+                            results.innerHTML = items.map(i => `<div class="cp-item" onclick="App.Router.navigate('${i.type === 'layer' ? 'layer' : 'item'}', '${i.id}'); App.UI.closeModals();">${this.Views.icons()[i.type] || '📄'} ${i.title} <span class="cp-item-type">${i.type}</span></div>`).join('') + res.map(c => `<div class="cp-item" onclick="window._cpExec('${c.title}')">${c.title} <span class="cp-item-type">${c.type}</span></div>`).join('');
+                        }
+                    });
+                    return;
+                }
+                results.innerHTML = res.map(c => `<div class="cp-item" onclick="window._cpExec('${c.title}')">${c.title} <span class="cp-item-type">${c.type}</span></div>`).join('');
+            };
+            
+            window._cpExec = (title) => { const cmd = commands.find(c => c.title === title); if(cmd) cmd.action(); };
+            renderResults('');
+            input.addEventListener('input', e => renderResults(e.target.value));
+        },
+
+        openCreateLayer() {
+            this.closeModals();
+            const root = document.getElementById('modal-root');
+            root.innerHTML = `
+                <div class="modal-overlay" onclick="if(event.target===this) App.UI.closeModals()">
+                    <div class="modal">
+                        <div class="modal-header"><h3 class="modal-title">Create Layer</h3></div>
+                        <div class="form-group"><label class="form-label">Name</label><input type="text" class="input" id="layer-name" placeholder="e.g. Programming"></div>
+                        <div class="form-group"><label class="form-label">Description</label><textarea class="input" id="layer-desc" placeholder="What is this context about?"></textarea></div>
+                        <div class="form-group"><label class="form-label">Icon (1-2 chars)</label><input type="text" class="input" id="layer-icon" maxlength="2" value="L"></div>
+                        <div class="flex justify-end gap-2 mt-4">
+                            <button class="btn btn-ghost" onclick="App.UI.closeModals()">Cancel</button>
+                            <button class="btn btn-primary" onclick="App.UI.saveCreateLayer()">Create</button>
+                        </div>
+                    </div>
+                </div>`;
+        },
+        async saveCreateLayer() {
+            const name = document.getElementById('layer-name').value;
+            if(!name) return;
+            const desc = document.getElementById('layer-desc').value;
+            const icon = document.getElementById('layer-icon').value || 'L';
+            const accents = ['#3b82f6', '#8b5cf6', '#ec4899', '#ef4444', '#f59e0b', '#10b981'];
+            const accent = accents[Math.floor(Math.random() * accents.length)];
+            const l = await App.Layers.create({ name, description: desc, icon, accent });
+            this.closeModals();
+            await App.saveSetting('onboarded', true);
+            App.Router.navigate('layer', l.id);
+        },
+
+        async deleteLayer(id) {
+            if (confirm('Are you sure you want to delete this layer and all its item associations?')) {
+                await App.Layers.delete(id);
+                this.showSnackbar('Layer deleted');
+                App.Router.navigate('layers');
+            }
+        },
+
+        openAddItem(layerId, type = 'note') {
+            this.closeModals();
+            App.state.captureType = type;
+            const root = document.getElementById('modal-root');
+            const title = `New ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+            root.innerHTML = `
+                <div class="modal-overlay" onclick="if(event.target===this) App.UI.closeModals()">
+                    <div class="modal">
+                        <div class="modal-header"><h3 class="modal-title">${title}</h3></div>
+                        <div class="form-group"><label class="form-label">Title</label><input type="text" class="input" id="item-title" placeholder="Title" autofocus></div>
+                        <div class="form-group"><label class="form-label">Content</label><textarea class="input" id="item-content" placeholder="Details..."></textarea></div>
+                        <div class="flex justify-end gap-2 mt-4">
+                            <button class="btn btn-ghost" onclick="App.UI.closeModals()">Cancel</button>
+                            <button class="btn btn-primary" onclick="App.UI.saveAddItem('${layerId || ''}', '${type}')">Create</button>
+                        </div>
+                    </div>
+                </div>`;
+        },
+        async saveAddItem(layerId, type) {
+            const title = document.getElementById('item-title').value;
+            if(!title) return;
+            const content = document.getElementById('item-content').value;
+            let metadata = {};
+            if(type === 'task') metadata = { status: 'todo', priority: 'medium' };
+            const item = await App.Items.create(type, { title, content, metadata, layerId: layerId || null });
+            this.closeModals();
+            App.Router.navigate('item', item.id);
+        },
+
+        openAddLayerToItem() {
+            this.closeModals();
+            const root = document.getElementById('modal-root');
+            const layers = App.state.cache.layers || [];
+            root.innerHTML = `
+                <div class="modal-overlay" onclick="if(event.target===this) App.UI.closeModals()">
+                    <div class="modal">
+                        <div class="modal-header"><h3 class="modal-title">Add to Layer</h3></div>
+                        <div class="flex flex-col gap-2">
+                            ${layers.map(l => `<button class="btn btn-secondary" style="justify-content: flex-start;" onclick="App.UI.addLayerToItem('${l.id}')">${l.icon} ${l.name}</button>`).join('')}
+                        </div>
+                    </div>
+                </div>`;
+        },
+        async addLayerToItem(layerId) {
+            await App.Relations.addItemToLayer(App.state.currentItemId, layerId);
+            this.closeModals();
+            await this.render();
+        },
+        async removeLayerFromItem(layerId) {
+            await App.Relations.removeItemFromLayer(App.state.currentItemId, layerId);
+            await this.render();
+        },
+
+        openConnectLayer(sourceId) {
+            this.closeModals();
+            const root = document.getElementById('modal-root');
+            const layers = (App.state.cache.layers || []).filter(l => l.id !== sourceId);
+            root.innerHTML = `
+                <div class="modal-overlay" onclick="if(event.target===this) App.UI.closeModals()">
+                    <div class="modal">
+                        <div class="modal-header"><h3 class="modal-title">Connect Layer</h3></div>
+                        <div class="flex flex-col gap-2">
+                            ${layers.map(l => `<button class="btn btn-secondary" style="justify-content: flex-start;" onclick="App.UI.connectLayer('${l.id}')">${l.icon} ${l.name}</button>`).join('') || '<p class="text-muted">No other layers to connect.</p>'}
+                        </div>
+                    </div>
+                </div>`;
+        },
+        async connectLayer(targetId) {
+            await App.Relations.connectLayers(App.state.currentLayerId, targetId);
+            this.closeModals();
+            await this.render();
+        },
+
+        showCtxMenu(e, type, id) {
+            e.preventDefault();
+            const root = document.getElementById('ctx-menu-root');
+            root.innerHTML = '';
+            const menu = document.createElement('div');
+            menu.className = 'ctx-menu';
+            menu.style.left = `${e.clientX}px`;
+            menu.style.top = `${e.clientY}px`;
+            
+            let items = [];
+            if(type === 'layer') {
+                items = [
+                    { label: 'Open', action: () => App.Router.navigate('layer', id) },
+                    { label: 'Add Item', action: () => this.openAddItem(id) },
+                    { sep: true },
+                    { label: 'Delete', danger: true, action: async () => { await App.Layers.delete(id); this.showSnackbar('Layer deleted'); App.Router.navigate('layers'); } }
+                ];
+            } else if(type === 'item') {
+                items = [
+                    { label: 'Open', action: () => App.Router.navigate('item', id) },
+                    { sep: true },
+                    { label: 'Delete', danger: true, action: async () => { await App.Items.delete(id); this.showSnackbar('Item deleted'); await this.render(); } }
+                ];
+            }
+
+            items.forEach(it => {
+                if(it.sep) { const d = document.createElement('div'); d.className = 'ctx-menu-sep'; menu.appendChild(d); return; }
+                const b = document.createElement('div');
+                b.className = `ctx-menu-item ${it.danger ? 'danger' : ''}`;
+                b.textContent = it.label;
+                b.onclick = () => { it.action(); this.closeModals(); };
+                menu.appendChild(b);
+            });
+
+            root.appendChild(menu);
+            
+            const rect = menu.getBoundingClientRect();
+            if(rect.right > window.innerWidth) menu.style.left = `${e.clientX - rect.width}px`;
+            if(rect.bottom > window.innerHeight) menu.style.top = `${e.clientY - rect.height}px`;
+        },
+
+        // --- Contextual AI Actions (Right Sidebar) ---
+        async askAI(prompt) {
+            document.getElementById('ai-input').value = prompt;
+            document.getElementById('context-panel').classList.add('open');
+            document.getElementById('sidebar').classList.remove('open');
+            this.sendAI();
+        },
+        async sendAI() {
+            const input = document.getElementById('ai-input');
+            const prompt = input.value.trim();
+            if(!prompt) return;
+            
+            const convId = App.state.currentConversationId;
+            const userMsg = { id: App.utils.uuid(), conversationId: convId, role: 'user', content: prompt, createdAt: Date.now() };
+            await App.DB.put('aiMessages', userMsg);
+            input.value = '';
+            await this.renderContextPanel();
+            
+            const aiMsgId = App.utils.uuid();
+            const aiMsg = { id: aiMsgId, conversationId: convId, role: 'assistant', content: '', createdAt: Date.now(), action: null };
+            await App.DB.put('aiMessages', aiMsg);
+            
+            const msgsDiv = document.getElementById('ai-messages');
+            const msgEl = document.createElement('div');
+            msgEl.className = 'ai-msg ai-msg-assistant';
+            msgEl.innerHTML = `<div class="ai-msg-role">assistant</div><div class="ai-msg-content" id="streaming-text"><div class="ai-thinking"><span></span><span></span><span></span></div></div>`;
+            msgsDiv.appendChild(msgEl);
+            msgsDiv.scrollTop = msgsDiv.scrollHeight;
+
+            await App.AI.streamChat(
+                prompt, App.state.currentLayerId, App.state.currentItemId,
+                (chunk) => {
+                    const el = document.getElementById('streaming-text');
+                    if(el) {
+                        const thinking = el.querySelector('.ai-thinking');
+                        if (thinking) thinking.remove();
+                        el.innerHTML += App.utils.escapeHtml(chunk).replace(/\n/g, '<br>');
+                    }
+                    msgsDiv.scrollTop = msgsDiv.scrollHeight;
+                },
+                async (action) => {
+                    aiMsg.action = action;
+                    await App.DB.put('aiMessages', aiMsg);
+                    await this.renderContextPanel();
+                },
+                async (fullText) => {
+                    aiMsg.content = fullText;
+                    await App.DB.put('aiMessages', aiMsg);
+                    await this.renderContextPanel();
+                },
+                async (err) => {
+                    aiMsg.content = `Error: ${err}`;
+                    await App.DB.put('aiMessages', aiMsg);
+                    await this.renderContextPanel();
+                }
+            );
+        },
+        async confirmAction(msgId) {
+            const msg = await App.DB.get('aiMessages', msgId);
+            if(msg.action && msg.action.layerId) {
+                for(const t of msg.action.tasks) {
+                    await App.Items.create('task', { title: t.title, layerId: msg.action.layerId, metadata: { status: 'todo', priority: 'medium' } });
+                }
+            } else if(msg.action) {
+                for(const t of msg.action.tasks) {
+                    await App.Items.create('task', { title: t.title, metadata: { status: 'todo', priority: 'medium' } });
+                }
+            }
+            this.showSnackbar(`${msg.action.tasks.length} tasks created`);
+            await this.render();
+        },
+        async clearConversation() {
+            const msgs = await App.DB.getAll('aiMessages');
+            for(const m of msgs) if(m.conversationId === App.state.currentConversationId) await App.DB.delete('aiMessages', m.id);
+            await App.DB.delete('aiConversations', App.state.currentConversationId);
+            App.state.currentConversationId = null;
+            await this.renderContextPanel();
+        },
+
+        // --- General AI Actions (Main View) ---
+        async renderGeneralAIMessages() {
+            const msgsDiv = document.getElementById('ai-chat-messages');
+            if (!msgsDiv) return;
+            const msgs = (await App.DB.getAll('aiMessages')).filter(m => m.conversationId === App.state.generalConversationId).sort((a, b) => a.createdAt - b.createdAt);
+            msgsDiv.innerHTML = '';
+            if (msgs.length === 0) {
+                msgsDiv.innerHTML = `<div class="ai-suggestions">
+                    <button class="ai-suggestion" onclick="App.UI.askGeneralAI('What can you help me with?')">What can you help me with?</button>
+                    <button class="ai-suggestion" onclick="App.UI.askGeneralAI('Brainstorm some ideas for a new project')">Brainstorm ideas</button>
+                    <button class="ai-suggestion" onclick="App.UI.askGeneralAI('Explain the concept of context organizing')">Explain context organizing</button>
+                </div>`;
+            } else {
+                msgs.forEach(m => {
+                    const msgEl = document.createElement('div');
+                    msgEl.className = `ai-msg ai-msg-${m.role}`;
+                    let actionHtml = '';
+                    if (m.action) {
+                        actionHtml = `<div class="ai-action-card"><div class="ai-action-title">Proposed Action: Create Tasks</div>${m.action.tasks.map(t => `<div class="ai-action-item">${t.title}</div>`).join('')}<button class="btn btn-primary mt-2" onclick="App.UI.confirmAction('${m.id}')">Create ${m.action.tasks.length} Tasks</button></div>`;
+                    }
+                    msgEl.innerHTML = `
+                        <div class="ai-msg-role">${m.role}</div>
+                        <div class="ai-msg-content">${App.utils.escapeHtml(m.content).replace(/\n/g, '<br>')}</div>
+                        ${actionHtml}
+                    `;
+                    msgsDiv.appendChild(msgEl);
+                });
+            }
+            const container = document.getElementById('ai-chat-container');
+            if (container) container.scrollTop = container.scrollHeight;
+        },
+        async askGeneralAI(prompt) {
+            const input = document.getElementById('ai-chat-input');
+            if (input) input.value = prompt;
+            this.sendGeneralAI();
+        },
+        async sendGeneralAI() {
+            const input = document.getElementById('ai-chat-input');
+            if (!input) return;
+            const prompt = input.value.trim();
+            if (!prompt) return;
+            
+            const convId = App.state.generalConversationId;
+            const userMsg = { id: App.utils.uuid(), conversationId: convId, role: 'user', content: prompt, createdAt: Date.now() };
+            await App.DB.put('aiMessages', userMsg);
+            input.value = '';
+            await this.renderGeneralAIMessages();
+            
+            const aiMsgId = App.utils.uuid();
+            const aiMsg = { id: aiMsgId, conversationId: convId, role: 'assistant', content: '', createdAt: Date.now(), action: null };
+            await App.DB.put('aiMessages', aiMsg);
+            
+            const msgsDiv = document.getElementById('ai-chat-messages');
+            const msgEl = document.createElement('div');
+            msgEl.className = 'ai-msg ai-msg-assistant';
+            msgEl.innerHTML = `<div class="ai-msg-role">assistant</div><div class="ai-msg-content" id="streaming-text"><div class="ai-thinking"><span></span><span></span><span></span></div></div>`;
+            msgsDiv.appendChild(msgEl);
+            document.querySelector('.main-content').scrollTop = document.querySelector('.main-content').scrollHeight;
+
+            await App.AI.streamChat(
+                prompt, null, null,
+                (chunk) => {
+                    const el = document.getElementById('streaming-text');
+                    if(el) {
+                        const thinking = el.querySelector('.ai-thinking');
+                        if (thinking) thinking.remove();
+                        el.innerHTML += App.utils.escapeHtml(chunk).replace(/\n/g, '<br>');
+                    }
+                    document.querySelector('.main-content').scrollTop = document.querySelector('.main-content').scrollHeight;
+                },
+                async (action) => {
+                    aiMsg.action = action;
+                    await App.DB.put('aiMessages', aiMsg);
+                    await this.renderGeneralAIMessages();
+                },
+                async (fullText) => {
+                    aiMsg.content = fullText;
+                    await App.DB.put('aiMessages', aiMsg);
+                    await this.renderGeneralAIMessages();
+                },
+                async (err) => {
+                    aiMsg.content = `Error: ${err}`;
+                    await App.DB.put('aiMessages', aiMsg);
+                    await this.renderGeneralAIMessages();
+                }
+            );
+        },
+        async clearGeneralConversation() {
+            if (!App.state.generalConversationId) return;
+            const msgs = await App.DB.getAll('aiMessages');
+            for (const m of msgs) if (m.conversationId === App.state.generalConversationId) await App.DB.delete('aiMessages', m.id);
+            await App.DB.delete('aiConversations', App.state.generalConversationId);
+            App.state.generalConversationId = null;
+            await this.renderView();
+        },
+
+        // --- Settings Actions ---
+        async saveAIKey() {
+            const key = document.getElementById('api-key-input').value;
+            await App.saveSetting('openrouterKey', key);
+            this.showSnackbar('API Key saved');
+            await this.render();
+        },
+        async fetchModels() {
+            this.showSnackbar('Fetching models...');
+            const models = await App.AI.fetchModels();
+            if(models.length > 0) { this.showSnackbar(`${models.length} models loaded`); await this.render(); }
+            else this.showSnackbar('Failed to fetch models. Try manual entry.');
+        },
+        filterModels() {
+            const q = document.getElementById('model-search').value.toLowerCase();
+            const models = App.AI.getCachedModels();
+            const resultsDiv = document.getElementById('model-search-results');
+            const currentModel = App.state.settings.selectedModel;
+            
+            const filtered = models.filter(m => 
+                m.name.toLowerCase().includes(q) || 
+                m.id.toLowerCase().includes(q)
+            ).slice(0, 50);
+            
+            if(filtered.length === 0) {
+                resultsDiv.innerHTML = '<div class="text-xs text-muted p-2">No models found.</div>';
+                return;
+            }
+            
+            resultsDiv.innerHTML = filtered.map(m => `
+                <div class="model-item ${m.id === currentModel ? 'selected' : ''}" onclick="App.UI.selectModel('${m.id}')">
+                    <span class="model-item-name">${m.name}</span>
+                    <span class="model-item-id">${m.id}</span>
+                </div>
+            `).join('');
+        },
+        async selectModel(modelId) {
+            document.getElementById('model-manual').value = modelId;
+            await this.saveModel();
+        },
+        async saveModel() {
+            const manualInput = document.getElementById('model-manual');
+            let model = manualInput ? manualInput.value.trim() : '';
+            
+            if (!model) {
+                return this.showSnackbar('Please select or enter a model ID');
+            }
+            
+            await App.saveSetting('selectedModel', model);
+            this.showSnackbar('Model saved');
+            await this.render();
+        },
+        async testAI() {
+            this.showSnackbar('Testing connection...');
+            const res = await App.AI.testConnection();
+            if(res.success) this.showSnackbar('OpenRouter connection is working.');
+            else this.showSnackbar(`Connection failed. ${res.error}`);
+        },
+        async changeTheme(theme) {
+            await App.saveSetting('theme', theme);
+            document.documentElement.setAttribute('data-theme', theme === 'system' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme);
+        },
+        async importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'application/json';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = async (ev) => {
+                    const success = await App.Data.import(ev.target.result, 'merge');
+                    this.showSnackbar(success ? 'Data imported' : 'Import failed');
+                    if(success) await this.render();
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        },
+        async clearData() {
+            if(confirm('This will permanently delete all local data. Are you sure?')) {
+                await App.DB.clear('layers'); await App.DB.clear('items'); await App.DB.clear('itemLayers'); await App.DB.clear('layerRelations'); await App.DB.clear('aiConversations'); await App.DB.delete('settings', 'onboarded');
+                this.showSnackbar('All data cleared');
+                location.reload();
+            }
+        },
+
+        // --- Item Editor ---
+        updateItemField(field, value) {
+            if (!App.UI._debouncedUpdate) {
+                App.UI._debouncedUpdate = App.utils.debounce(async (field, value) => {
+                    const status = document.getElementById('save-status');
+                    if(status) status.textContent = 'Saving...';
+                    const item = await App.Items.get(App.state.currentItemId);
+                    if(!item) return;
+                    if(field.includes('.')) { const [k, sub] = field.split('.'); item.metadata[sub] = value; }
+                    else item[field] = value;
+                    await App.Items.update(item.id, item);
+                    if(status) status.textContent = 'Saved';
+                }, 400);
+            }
+            App.UI._debouncedUpdate(field, value);
+        },
+
+        // --- Utilities ---
+        closeModals() { document.getElementById('modal-root').innerHTML = ''; document.getElementById('ctx-menu-root').innerHTML = ''; },
+        showSnackbar(msg) {
+            const root = document.getElementById('snackbar-root');
+            const id = App.utils.uuid();
+            root.innerHTML = `<div class="snackbar" id="snack-${id}"><span class="snackbar-text">${msg}</span></div>`;
+            setTimeout(() => { const el = document.getElementById(`snack-${id}`); if(el) el.remove(); }, 3000);
+        },
+        showOnboarding() {
+            const root = document.getElementById('modal-root');
+            root.innerHTML = `
+                <div class="modal-overlay">
+                    <div class="modal" style="max-width: 480px; text-align: center;">
+                        <h2 class="view-title" style="font-size: 28px; margin-bottom: 8px;">Welcome to Layer</h2>
+                        <p class="text-muted mb-6">Your digital world, organized by context instead of folders.</p>
+                        <div class="flex flex-col gap-2 mb-6">
+                            <button class="btn btn-primary" onclick="App.UI.openCreateLayer()">Create your first Layer</button>
+                            <button class="btn btn-ghost" onclick="App.UI.skipOnboarding()">Skip</button>
+                        </div>
+                    </div>
+                </div>`;
+        },
+        async skipOnboarding() {
+            await App.saveSetting('onboarded', true);
+            this.closeModals();
+        }
+    }
+};
+
+App.init();
+</script>
+</body>
+  </html>
